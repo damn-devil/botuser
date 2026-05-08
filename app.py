@@ -1,5 +1,4 @@
-# app.py - с поддержкой сохранения тем
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_from_directory
 from flask_socketio import SocketIO, emit
 import requests
 import json
@@ -7,6 +6,7 @@ import threading
 import time
 import os
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -14,133 +14,42 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'telegram-bot-secret-key-change-this'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Хранилище данных
+# Используем временную папку на Render
+CONFIG_FILE = os.path.join(tempfile.gettempdir(), "web_config.json")
+THEMES_FILE = os.path.join(tempfile.gettempdir(), "themes.json")
+
 bots_data = {}
 active_bots = {}
 user_settings = {}
-
-CONFIG_FILE = "web_config.json"
-THEMES_FILE = "themes.json"
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {"bots": {}, "settings": {}}
+    return {"bots": {}, "settings": {"current_theme": "dark"}}
 
 def save_config(data):
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def load_themes():
-    """Загрузка сохраненных тем"""
-    if os.path.exists(THEMES_FILE):
-        with open(THEMES_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return get_default_themes()
-
-def save_themes(themes):
-    with open(THEMES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(themes, f, ensure_ascii=False, indent=4)
-
 def get_default_themes():
     return {
         "dark": {
-            "name": "Темная (стандартная)",
+            "name": "Темная",
             "colors": {
-                "sidebar": "#101010",
-                "main_bg": "#1e1e1e",
-                "chat_list": "#151515",
-                "accent": "#007aff",
-                "text": "#ffffff",
-                "text_secondary": "#888888",
-                "bubble_own": "#007aff",
-                "bubble_other": "#2d2d2d",
-                "hover": "#2a2a2a",
-                "border": "#3a3a3a"
+                "sidebar": "#101010", "main_bg": "#1e1e1e", "chat_list": "#151515",
+                "accent": "#007aff", "text": "#ffffff", "text_secondary": "#888888",
+                "bubble_own": "#007aff", "bubble_other": "#2d2d2d",
+                "hover": "#2a2a2a", "border": "#3a3a3a"
             },
-            "bubble_radius": 20,
-            "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "font_size": 14
-        },
-        "light": {
-            "name": "Светлая",
-            "colors": {
-                "sidebar": "#f0f0f0",
-                "main_bg": "#ffffff",
-                "chat_list": "#f5f5f5",
-                "accent": "#007aff",
-                "text": "#1a1a1a",
-                "text_secondary": "#666666",
-                "bubble_own": "#e3f2fd",
-                "bubble_other": "#f0f0f0",
-                "hover": "#e8e8e8",
-                "border": "#e0e0e0"
-            },
-            "bubble_radius": 20,
-            "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "font_size": 14
-        },
-        "green": {
-            "name": "Зеленая",
-            "colors": {
-                "sidebar": "#0a2f1f",
-                "main_bg": "#0e3d2a",
-                "chat_list": "#0c3522",
-                "accent": "#2ecc71",
-                "text": "#ffffff",
-                "text_secondary": "#a8e6cf",
-                "bubble_own": "#27ae60",
-                "bubble_other": "#1e5631",
-                "hover": "#1a4d2e",
-                "border": "#2c5e41"
-            },
-            "bubble_radius": 24,
-            "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "font_size": 14
-        },
-        "purple": {
-            "name": "Фиолетовая",
-            "colors": {
-                "sidebar": "#1a0b2e",
-                "main_bg": "#24123a",
-                "chat_list": "#1e0f33",
-                "accent": "#9b59b6",
-                "text": "#ffffff",
-                "text_secondary": "#d4a5ff",
-                "bubble_own": "#8e44ad",
-                "bubble_other": "#2d1b47",
-                "hover": "#2a1742",
-                "border": "#3d2a5c"
-            },
-            "bubble_radius": 16,
-            "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "font_size": 14
-        },
-        "ocean": {
-            "name": "Океан",
-            "colors": {
-                "sidebar": "#001f3f",
-                "main_bg": "#003366",
-                "chat_list": "#002a4f",
-                "accent": "#00b4d8",
-                "text": "#ffffff",
-                "text_secondary": "#90e0ef",
-                "bubble_own": "#0077b6",
-                "bubble_other": "#023e8a",
-                "hover": "#004c80",
-                "border": "#0077b6"
-            },
-            "bubble_radius": 20,
-            "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            "font_size": 14
+            "bubble_radius": 20, "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", "font_size": 14
         }
     }
 
 data = load_config()
-bots_data = data["bots"]
+bots_data = data.get("bots", {})
 user_settings = data.get("settings", {"current_theme": "dark"})
-available_themes = load_themes()
+available_themes = get_default_themes()
 
 class BotUpdatePoller:
     def __init__(self, token, socketio_instance):
@@ -167,7 +76,7 @@ class BotUpdatePoller:
                         self.process_update(update)
                         self.last_update_id = update["update_id"]
             except Exception as e:
-                print(f"Polling error for {self.token}: {e}")
+                print(f"Polling error: {e}")
             time.sleep(0.5)
             
     def process_update(self, update):
@@ -206,6 +115,10 @@ class BotUpdatePoller:
     def stop(self):
         self.running = False
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/offline')
 def offline():
     return render_template('offline.html')
@@ -213,48 +126,6 @@ def offline():
 @app.route('/static/<path:path>')
 def serve_static(path):
     return send_from_directory('static', path)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/api/themes', methods=['GET'])
-def get_themes():
-    return jsonify({
-        "available": available_themes,
-        "current": user_settings.get("current_theme", "dark")
-    })
-
-@app.route('/api/themes/<theme_id>', methods=['POST'])
-def apply_theme(theme_id):
-    if theme_id in available_themes:
-        user_settings["current_theme"] = theme_id
-        save_config({"bots": bots_data, "settings": user_settings})
-        return jsonify({"success": True, "theme": available_themes[theme_id]})
-    return jsonify({"error": "Theme not found"}), 404
-
-@app.route('/api/themes/custom', methods=['POST'])
-def save_custom_theme():
-    theme_data = request.json
-    theme_id = theme_data.get("id")
-    theme_name = theme_data.get("name")
-    theme_config = theme_data.get("config")
-    
-    if theme_id and theme_config:
-        available_themes[theme_id] = {
-            "name": theme_name,
-            "colors": theme_config.get("colors", {}),
-            "bubble_radius": theme_config.get("bubble_radius", 20),
-            "font_family": theme_config.get("font_family", "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"),
-            "font_size": theme_config.get("font_size", 14)
-        }
-        save_themes(available_themes)
-        return jsonify({"success": True})
-    return jsonify({"error": "Invalid theme data"}), 400
-
-@app.route('/api/settings', methods=['GET'])
-def get_settings():
-    return jsonify(user_settings)
 
 @app.route('/api/bots', methods=['GET'])
 def get_bots():
@@ -413,15 +284,12 @@ def init_pollers():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     
-    if len(sys.argv) > 1:
-        try:
-            port = int(sys.argv[1])
-        except ValueError:
-            pass
-    
     print(f"\n🚀 Запуск сервера на порту {port}")
-    print(f"📱 Откройте в браузере: http://localhost:{port}")
-    print(f"⚙️  Для остановки нажмите Ctrl+C\n")
+    print(f"📱 Откройте в браузере: http://localhost:{port}\n")
     
     init_pollers()
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    
+    if os.environ.get('RENDER'):
+        socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    else:
+        socketio.run(app, host='0.0.0.0', port=port, debug=True)
