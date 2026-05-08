@@ -11,7 +11,8 @@
     
     <title>Telegram Multi-Bot</title>
     
-    <!-- Остальные стили -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -20,7 +21,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* CSS Variables с учетом Safe Area */
+        /* CSS Variables */
         :root {
             --sidebar: #101010;
             --main-bg: #1e1e1e;
@@ -36,7 +37,6 @@
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --font-size: 14px;
             
-            /* Safe Area Insets для iPhone */
             --safe-area-top: env(safe-area-inset-top, 0px);
             --safe-area-bottom: env(safe-area-inset-bottom, 0px);
             --safe-area-left: env(safe-area-inset-left, 0px);
@@ -52,20 +52,15 @@
             position: fixed;
             width: 100%;
             height: 100%;
-            /* Учитываем safe area */
-            padding-top: var(--safe-area-top);
-            padding-bottom: var(--safe-area-bottom);
         }
 
-        /* App Container */
         .app {
             display: flex;
             height: 100%;
             width: 100%;
-            position: relative;
         }
 
-        /* Sidebar - фиксированная */
+        /* Sidebar */
         .sidebar {
             width: 80px;
             background: var(--sidebar);
@@ -76,7 +71,66 @@
             padding: 20px 0;
             padding-bottom: calc(20px + var(--safe-area-bottom));
             z-index: 10;
-            flex-shrink: 0;
+        }
+
+        .bots-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            overflow-y: auto;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .bot-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .bot-icon.active {
+            box-shadow: 0 0 0 3px white;
+        }
+
+        .unread-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff3b30;
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+
+        .settings-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Chat List */
@@ -87,18 +141,57 @@
             display: flex;
             flex-direction: column;
             z-index: 5;
-            transform: translateX(0);
-            transition: transform 0.3s ease;
         }
 
-        /* Main Chat Area */
+        .chat-list-header {
+            padding: 20px;
+            padding-top: calc(20px + var(--safe-area-top));
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--text);
+        }
+
+        .chats-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .chat-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+        }
+
+        .chat-item:hover {
+            background: var(--hover);
+        }
+
+        .chat-item.active {
+            background: var(--accent);
+        }
+
+        .chat-unread {
+            background: var(--accent);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Main Chat */
         .main-view {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: var(--main-bg);
-            position: relative;
-            min-width: 0;
         }
 
         .chat-header {
@@ -109,24 +202,78 @@
             font-size: 16px;
             font-weight: bold;
             color: var(--text);
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
 
-        /* Messages Area - исправлен скролл */
         .messages-area {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            padding-bottom: 10px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Input Area - фиксированная снизу */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-own {
+            align-self: flex-end;
+        }
+
+        .message-other {
+            align-self: flex-start;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            margin-bottom: 4px;
+            padding-left: 12px;
+            color: var(--text-secondary);
+        }
+
+        .bubble {
+            padding: 10px 16px;
+            border-radius: var(--bubble-radius);
+            word-wrap: break-word;
+            font-size: var(--font-size);
+            line-height: 1.4;
+        }
+
+        .bubble-own {
+            background: var(--bubble-own);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bubble-other {
+            background: var(--bubble-other);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            margin-top: 4px;
+            padding: 0 12px;
+            color: var(--text-secondary);
+        }
+
         .input-area {
             padding: 15px 20px;
             padding-bottom: calc(15px + var(--safe-area-bottom));
@@ -135,14 +282,196 @@
             gap: 10px;
             align-items: center;
             border-top: 1px solid var(--border);
-            position: sticky;
-            bottom: 0;
-            z-index: 10;
         }
 
-        /* ... остальные стили как были ... */
-        
-        /* Mobile Styles */
+        .message-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            background: var(--bubble-other);
+            color: var(--text);
+            font-size: var(--font-size);
+            outline: none;
+            font-family: var(--font-family);
+        }
+
+        .send-btn, .file-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-btn {
+            background: var(--bubble-other);
+            color: var(--text);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--main-bg);
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bubble-other);
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .modal-btn-secondary {
+            background: var(--bubble-other);
+            color: var(--text);
+        }
+
+        /* Theme Grid */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .theme-card {
+            background: var(--bubble-other);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .theme-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .theme-card.active {
+            border: 2px solid var(--accent);
+        }
+
+        .theme-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .color-label {
+            width: 120px;
+            font-size: 12px;
+        }
+
+        .color-input {
+            width: 50px;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .slider-input {
+            flex: 1;
+        }
+
+        .range-value {
+            margin-left: 10px;
+            font-size: 12px;
+            min-width: 45px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile */
         @media (max-width: 768px) {
             .sidebar {
                 width: 65px;
@@ -155,9 +484,9 @@
                 bottom: 0;
                 z-index: 200;
                 transform: translateX(-100%);
+                transition: transform 0.3s ease;
                 width: 85%;
                 max-width: 320px;
-                transition: transform 0.3s ease;
             }
             
             .chat-list.open {
@@ -165,7 +494,6 @@
                 box-shadow: 2px 0 10px rgba(0,0,0,0.3);
             }
             
-            /* Оверлей для закрытия чат-листа */
             .chat-list-overlay {
                 display: none;
                 position: fixed;
@@ -191,56 +519,55 @@
                 max-width: 85%;
             }
             
-            .chat-header {
-                padding: 15px;
-                padding-top: calc(15px + var(--safe-area-top));
-            }
-            
-            .input-area {
-                padding: 12px 15px;
-                padding-bottom: calc(12px + var(--safe-area-bottom));
-            }
-            
             .message-input {
-                padding: 10px 15px;
-                font-size: 16px; /* Предотвращает зум на iOS */
-            }
-            
-            .send-btn, .file-btn {
-                width: 42px;
-                height: 42px;
-                font-size: 18px;
+                font-size: 16px;
             }
         }
 
-        /* Специально для iPhone с челкой */
-        @supports (padding: max(0px)) {
-            .chat-header,
-            .input-area,
-            .sidebar {
-                padding-left: max(20px, var(--safe-area-left));
-                padding-right: max(20px, var(--safe-area-right));
-            }
+        #online-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 999;
+            background: rgba(0,0,0,0.8);
         }
         
-        /* Отключаем выделение на мобильных */
-        .bot-icon, .chat-item, .send-btn, .file-btn {
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
+        #online-status.online {
+            background: #34c759;
+            color: white;
         }
         
-        /* Улучшаем скролл */
-        .messages-area, .chats-scroll, .bots-container {
-            -webkit-overflow-scrolling: touch;
+        #online-status.offline {
+            background: #ff3b30;
+            color: white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--chat-list);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        
+        .drag-over {
+            border: 2px dashed var(--accent);
+            background: rgba(0,122,255,0.1);
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Оверлей для мобильной версии -->
         <div class="chat-list-overlay" id="chatListOverlay" onclick="closeChatList()"></div>
         
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="bots-container" id="botsContainer">
                 <div class="spinner"></div>
@@ -248,28 +575,14 @@
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
 
-        <!-- Chat List -->
         <div class="chat-list" id="chatListSidebar">
             <div class="chat-list-header">Чаты</div>
-            <div class="chats-scroll" id="chatsList">
-                <div class="empty-state">
-                    <div class="empty-state-icon">💬</div>
-                    <div>Выберите бота</div>
-                </div>
-            </div>
+            <div class="chats-scroll" id="chatsList"></div>
         </div>
 
-        <!-- Main Chat View -->
-        <div class="main-view" id="mainView">
-            <div class="chat-header" id="chatHeader">
-                Выберите чат
-            </div>
-            <div class="messages-area" id="messagesArea" draggable="true" ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📱</div>
-                    <div>Выберите чат для начала общения</div>
-                </div>
-            </div>
+        <div class="main-view">
+            <div class="chat-header" id="chatHeader">Выберите чат</div>
+            <div class="messages-area" id="messagesArea"></div>
             <div class="input-area">
                 <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
                 <input type="file" id="fileInput" style="display: none" onchange="sendFile(this.files[0])">
@@ -279,10 +592,448 @@
         </div>
     </div>
 
-    <!-- Остальные модальные окна ... -->
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h2>Настройки</h2>
+            <div class="theme-grid" id="themesGrid"></div>
+            <hr style="margin: 15px 0; border-color: var(--border);">
+            <button class="modal-btn modal-btn-primary" style="width:100%; margin-bottom:15px" onclick="openAddBotModal(); closeSettings()">➕ Добавить бота</button>
+            <div id="botsListSettings"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeSettings()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div class="modal" id="addBotModal">
+        <div class="modal-content">
+            <h2>Добавить бота</h2>
+            <input type="text" class="modal-input" id="botToken" placeholder="Введите токен бота">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeAddBotModal()">Отмена</button>
+                <button class="modal-btn modal-btn-primary" onclick="addBot()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="online-status"></div>
 
     <script>
-        // Функции для управления чат-листом на телефоне
+        let socket = io();
+        let activeBotToken = null;
+        let currentChatId = null;
+        let currentTheme = null;
+        let availableThemes = {};
+        let isMobile = window.innerWidth <= 768;
+
+        // ========== THEMES ==========
+        async function loadThemes() {
+            try {
+                const res = await fetch('/api/themes');
+                const data = await res.json();
+                availableThemes = data.available;
+                currentTheme = data.current;
+                applyTheme(currentTheme);
+                renderThemesGrid();
+            } catch (e) {
+                console.error('Failed to load themes:', e);
+            }
+        }
+
+        function applyTheme(themeId) {
+            const theme = availableThemes[themeId];
+            if (!theme) return;
+            
+            const colors = theme.colors;
+            document.documentElement.style.setProperty('--sidebar', colors.sidebar);
+            document.documentElement.style.setProperty('--main-bg', colors.main_bg);
+            document.documentElement.style.setProperty('--chat-list', colors.chat_list);
+            document.documentElement.style.setProperty('--accent', colors.accent);
+            document.documentElement.style.setProperty('--text', colors.text);
+            document.documentElement.style.setProperty('--text-secondary', colors.text_secondary);
+            document.documentElement.style.setProperty('--bubble-own', colors.bubble_own);
+            document.documentElement.style.setProperty('--bubble-other', colors.bubble_other);
+            document.documentElement.style.setProperty('--hover', colors.hover);
+            document.documentElement.style.setProperty('--border', colors.border);
+            document.documentElement.style.setProperty('--bubble-radius', theme.bubble_radius + 'px');
+            document.documentElement.style.setProperty('--font-size', theme.font_size + 'px');
+        }
+
+        async function applyThemeFromServer(themeId) {
+            try {
+                const res = await fetch(`/api/themes/${themeId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    currentTheme = themeId;
+                    applyTheme(themeId);
+                    renderThemesGrid();
+                }
+            } catch (e) {
+                console.error('Failed to apply theme:', e);
+            }
+        }
+
+        function renderThemesGrid() {
+            const grid = document.getElementById('themesGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            
+            for (const [id, theme] of Object.entries(availableThemes)) {
+                const card = document.createElement('div');
+                card.className = 'theme-card';
+                if (currentTheme === id) card.classList.add('active');
+                
+                const preview = document.createElement('div');
+                preview.className = 'theme-preview';
+                preview.style.background = `linear-gradient(135deg, ${theme.colors.accent}, ${theme.colors.main_bg})`;
+                
+                const name = document.createElement('div');
+                name.textContent = theme.name;
+                name.style.fontSize = '12px';
+                
+                card.appendChild(preview);
+                card.appendChild(name);
+                card.onclick = () => applyThemeFromServer(id);
+                grid.appendChild(card);
+            }
+        }
+
+        // ========== BOTS ==========
+        async function loadBots() {
+            try {
+                const res = await fetch('/api/bots');
+                const botsList = await res.json();
+                renderBots(botsList);
+                if (botsList.length > 0 && !activeBotToken) {
+                    activeBotToken = botsList[0].token;
+                    await switchBot(activeBotToken);
+                }
+            } catch (e) {
+                console.error('Failed to load bots:', e);
+            }
+        }
+
+        function renderBots(botsList) {
+            const container = document.getElementById('botsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (botsList.length === 0) {
+                container.innerHTML = '<div class="empty-state">🤖<br>Нет ботов</div>';
+                return;
+            }
+            
+            botsList.forEach(bot => {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'bot-icon';
+                if (activeBotToken === bot.token) botDiv.classList.add('active');
+                botDiv.textContent = bot.username.charAt(0).toUpperCase();
+                if (bot.unread_total > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    badge.textContent = bot.unread_total > 9 ? '9+' : bot.unread_total;
+                    botDiv.appendChild(badge);
+                }
+                botDiv.onclick = () => switchBot(bot.token);
+                container.appendChild(botDiv);
+            });
+        }
+
+        async function switchBot(token) {
+            activeBotToken = token;
+            await fetch('/api/bots/' + token + '/activate', { method: 'POST' });
+            
+            document.querySelectorAll('.bot-icon').forEach(icon => icon.classList.remove('active'));
+            document.querySelectorAll('.bot-icon').forEach(icon => {
+                if (icon.textContent.trim().toUpperCase() === botsData[token]?.username?.charAt(0).toUpperCase()) {
+                    icon.classList.add('active');
+                }
+            });
+            
+            currentChatId = null;
+            document.getElementById('chatHeader').textContent = 'Выберите чат';
+            document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Выберите чат</div></div>';
+            await loadChats(token);
+        }
+
+        async function loadChats(token) {
+            try {
+                const res = await fetch(`/api/chats/${token}`);
+                const chats = await res.json();
+                renderChats(chats);
+            } catch (e) {
+                console.error('Failed to load chats:', e);
+            }
+        }
+
+        function renderChats(chats) {
+            const container = document.getElementById('chatsList');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (chats.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет чатов</div></div>';
+                return;
+            }
+            
+            chats.forEach(chat => {
+                const chatDiv = document.createElement('div');
+                chatDiv.className = 'chat-item';
+                if (currentChatId === chat.id) chatDiv.classList.add('active');
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'chat-name';
+                nameSpan.textContent = chat.name;
+                chatDiv.appendChild(nameSpan);
+                
+                if (chat.unread > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'chat-unread';
+                    badge.textContent = chat.unread;
+                    chatDiv.appendChild(badge);
+                }
+                
+                chatDiv.onclick = () => selectChat(chat.id, chat.name);
+                container.appendChild(chatDiv);
+            });
+        }
+
+        async function selectChat(chatId, chatName) {
+            currentChatId = chatId;
+            document.getElementById('chatHeader').textContent = chatName;
+            
+            await fetch(`/api/chats/${activeBotToken}/${chatId}/mark_read`, { method: 'POST' });
+            await loadMessages(chatId);
+            await loadChats(activeBotToken);
+            
+            if (isMobile) closeChatList();
+        }
+
+        async function loadMessages(chatId) {
+            try {
+                const res = await fetch(`/api/messages/${activeBotToken}/${chatId}`);
+                const messages = await res.json();
+                renderMessages(messages);
+            } catch (e) {
+                console.error('Failed to load messages:', e);
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messagesArea');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет сообщений</div></div>';
+                return;
+            }
+            
+            messages.forEach(msg => addMessageToChat(msg));
+            scrollToBottom();
+        }
+
+        function addMessageToChat(msg) {
+            const container = document.getElementById('messagesArea');
+            if (!container) return;
+            
+            if (container.querySelector('.empty-state')) container.innerHTML = '';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.is_my ? 'message-own' : 'message-other'}`;
+            
+            if (!msg.is_my && msg.sender) {
+                const senderSpan = document.createElement('div');
+                senderSpan.className = 'message-sender';
+                senderSpan.textContent = msg.sender;
+                messageDiv.appendChild(senderSpan);
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${msg.is_my ? 'bubble-own' : 'bubble-other'}`;
+            bubble.textContent = msg.text;
+            messageDiv.appendChild(bubble);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            const date = new Date(msg.time);
+            timeSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timeSpan);
+            
+            container.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !activeBotToken || !currentChatId) return;
+            
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: activeBotToken, chat_id: currentChatId, text: text })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    addMessageToChat(data.message);
+                    input.value = '';
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Failed to send message:', e);
+                alert('Ошибка при отправке');
+            }
+        }
+
+        async function sendFile(file) {
+            if (!file || !activeBotToken || !currentChatId) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1];
+                
+                try {
+                    const res = await fetch('/api/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: activeBotToken,
+                            chat_id: currentChatId,
+                            file: { name: file.name, data: base64 }
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (data.success) {
+                        addMessageToChat(data.message);
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                } catch (e) {
+                    console.error('Failed to send file:', e);
+                    alert('Ошибка при отправке файла');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) sendFile(files[0]);
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                const container = document.getElementById('messagesArea');
+                if (container) container.scrollTop = container.scrollHeight;
+            }, 100);
+        }
+
+        // ========== MODALS ==========
+        function openSettings() {
+            loadBotsList();
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function openAddBotModal() {
+            closeSettings();
+            document.getElementById('addBotModal').classList.add('active');
+        }
+
+        function closeAddBotModal() {
+            document.getElementById('addBotModal').classList.remove('active');
+            document.getElementById('botToken').value = '';
+        }
+
+        async function addBot() {
+            const token = document.getElementById('botToken').value.trim();
+            if (!token) return;
+            
+            const addBtn = event.target;
+            addBtn.disabled = true;
+            addBtn.textContent = 'Добавление...';
+            
+            try {
+                const res = await fetch('/api/bots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    closeAddBotModal();
+                    await loadBots();
+                    alert(`Бот @${data.username} успешно добавлен!`);
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Failed to add bot:', e);
+                alert('Ошибка при добавлении бота');
+            } finally {
+                addBtn.disabled = false;
+                addBtn.textContent = 'Добавить';
+            }
+        }
+
+        async function loadBotsList() {
+            try {
+                const res = await fetch('/api/bots');
+                const botsList = await res.json();
+                const container = document.getElementById('botsListSettings');
+                if (!container) return;
+                
+                if (botsList.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Нет добавленных ботов</div>';
+                } else {
+                    container.innerHTML = botsList.map(bot => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bubble-other); border-radius: 10px; margin-bottom: 10px;">
+                            <div>🤖 ${bot.username}</div>
+                            <button class="modal-btn modal-btn-secondary" onclick="removeBot('${bot.token}')">Удалить</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load bots list:', e);
+            }
+        }
+
+        async function removeBot(token) {
+            if (confirm('Удалить этого бота?')) {
+                await fetch(`/api/bots/${token}`, { method: 'DELETE' });
+                if (activeBotToken === token) {
+                    activeBotToken = null;
+                    currentChatId = null;
+                    document.getElementById('chatHeader').textContent = 'Выберите чат';
+                    document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📱</div><div>Выберите чат для начала общения</div></div>';
+                }
+                await loadBots();
+                await loadBotsList();
+            }
+        }
+
+        // ========== MOBILE ==========
         function openChatList() {
             document.getElementById('chatListSidebar').classList.add('open');
             document.getElementById('chatListOverlay').classList.add('active');
@@ -292,58 +1043,72 @@
             document.getElementById('chatListSidebar').classList.remove('open');
             document.getElementById('chatListOverlay').classList.remove('active');
         }
-        
-        // Автоматическое определение мобильного устройства
-        const isMobile = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        
-        // Добавляем обработчик для открытия чат-листа на мобильных
-        if (isMobile) {
-            // По клику на иконку меню (можно добавить кнопку в header)
-            const header = document.querySelector('.chat-header');
-            if (header) {
-                header.addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
-                        openChatList();
-                    }
-                });
-            }
-            
-            // Закрытие по свайпу влево
-            let touchStartX = 0;
-            document.addEventListener('touchstart', (e) => {
-                touchStartX = e.touches[0].clientX;
-            });
-            
-            document.addEventListener('touchend', (e) => {
-                const touchEndX = e.changedTouches[0].clientX;
-                const chatList = document.getElementById('chatListSidebar');
-                if (touchStartX < 50 && touchEndX > 100 && !chatList.classList.contains('open')) {
-                    openChatList();
-                } else if (touchEndX < 50 && touchStartX > 100 && chatList.classList.contains('open')) {
-                    closeChatList();
+
+        // ========== WEBSOCKET ==========
+        function setupWebSocket() {
+            socket.on('connect', () => console.log('WebSocket connected'));
+            socket.on('new_message', (data) => {
+                if (activeBotToken === data.token && currentChatId === data.chat_id) {
+                    addMessageToChat(data.message);
+                } else {
+                    loadBots();
+                    if (activeBotToken === data.token) loadChats(activeBotToken);
                 }
             });
         }
-        
-        // Переопределяем функцию selectChat для закрытия чат-листа
-        const originalSelectChat = window.selectChat;
-        window.selectChat = async function(chatId, chatName) {
-            if (isMobile) {
-                closeChatList();
+
+        // ========== INIT ==========
+        async function loadActiveBot() {
+            try {
+                const res = await fetch('/api/bots/active');
+                const data = await res.json();
+                if (data.token) activeBotToken = data.token;
+            } catch (e) {
+                console.error('Failed to load active bot:', e);
             }
-            return originalSelectChat(chatId, chatName);
-        };
+        }
+
+        function checkOnlineStatus() {
+            const statusDiv = document.getElementById('online-status');
+            const isOnline = navigator.onLine;
+            statusDiv.textContent = isOnline ? '🟢 Онлайн' : '🔴 Офлайн';
+            statusDiv.className = isOnline ? 'online' : 'offline';
+        }
+
+        async function init() {
+            await loadActiveBot();
+            await loadThemes();
+            await loadBots();
+            setupWebSocket();
+            checkOnlineStatus();
+            
+            if (isMobile) {
+                const header = document.querySelector('.chat-header');
+                if (header) header.onclick = () => openChatList();
+            }
+        }
+
+        window.addEventListener('online', checkOnlineStatus);
+        window.addEventListener('offline', checkOnlineStatus);
         
-        // Обновляем стили при загрузке
-        window.addEventListener('load', () => {
-            // Устанавливаем правильную высоту для iOS
-            const setHeight = () => {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', `${vh}px`);
-            };
-            setHeight();
-            window.addEventListener('resize', setHeight);
-        });
+        const messagesArea = document.getElementById('messagesArea');
+        if (messagesArea) {
+            messagesArea.ondragenter = (e) => { e.preventDefault(); messagesArea.classList.add('drag-over'); };
+            messagesArea.ondragleave = (e) => { messagesArea.classList.remove('drag-over'); };
+            messagesArea.ondragover = (e) => e.preventDefault();
+            messagesArea.ondrop = handleFileDrop;
+        }
+
+        // Сохраняем данные ботов для иконок
+        let botsData = {};
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/bots');
+                botsData = await res.json();
+            } catch(e) {}
+        }, 5000);
+
+        init();
     </script>
 </body>
 </html>
