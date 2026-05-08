@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Telegram Multi-Bot</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TG Bot">
+    <link rel="apple-touch-icon" href="/static/icons/icon-152.png">
+    <meta name="theme-color" content="#007aff">
+    <meta name="msapplication-TileColor" content="#007aff">
+    <meta name="msapplication-TileImage" content="/static/icons/icon-144.png">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* CSS Variables */
+        :root {
+            --sidebar: #101010;
+            --main-bg: #1e1e1e;
+            --chat-list: #151515;
+            --accent: #007aff;
+            --text: #ffffff;
+            --text-secondary: #888888;
+            --bubble-own: #007aff;
+            --bubble-other: #2d2d2d;
+            --hover: #2a2a2a;
+            --border: #3a3a3a;
+            --bubble-radius: 20px;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-size: 14px;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--main-bg);
+            color: var(--text);
+            overflow: hidden;
+            font-size: var(--font-size);
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* App Container */
+        .app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: var(--sidebar);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            z-index: 10;
+        }
+
+        .bots-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            overflow-y: auto;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .bot-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            font-weight: bold;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .bot-icon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+
+        .bot-icon.active {
+            box-shadow: 0 0 0 3px white;
+        }
+
+        .unread-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff3b30;
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            font-weight: bold;
+        }
+
+        .settings-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+        }
+
+        .settings-btn:hover {
+            background: var(--hover);
+            transform: rotate(90deg);
+        }
+
+        /* Chat List */
+        .chat-list {
+            width: 300px;
+            background: var(--chat-list);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+        }
+
+        .chat-list-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--text);
+        }
+
+        .chats-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .chat-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text);
+        }
+
+        .chat-item:hover {
+            background: var(--hover);
+        }
+
+        .chat-item.active {
+            background: var(--accent);
+        }
+
+        .chat-name {
+            font-size: 14px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .chat-unread {
+            background: var(--accent);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Main Chat Area */
+        .main-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--main-bg);
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: color-mix(in srgb, var(--main-bg) 95%, black);
+            border-bottom: 1px solid var(--border);
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Message Bubbles */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-own {
+            align-self: flex-end;
+        }
+
+        .message-other {
+            align-self: flex-start;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            margin-bottom: 4px;
+            padding-left: 12px;
+            color: var(--text-secondary);
+        }
+
+        .bubble {
+            padding: 10px 16px;
+            border-radius: var(--bubble-radius);
+            word-wrap: break-word;
+            font-size: var(--font-size);
+            line-height: 1.4;
+            max-width: 100%;
+        }
+
+        .bubble-own {
+            background: var(--bubble-own);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bubble-other {
+            background: var(--bubble-other);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            margin-top: 4px;
+            padding: 0 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px;
+            background: transparent;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 25px;
+            background: var(--bubble-other);
+            color: var(--text);
+            font-size: var(--font-size);
+            outline: none;
+            font-family: var(--font-family);
+        }
+
+        .message-input:focus {
+            background: color-mix(in srgb, var(--bubble-other) 80%, white);
+        }
+
+        .send-btn, .file-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .file-btn {
+            background: var(--bubble-other);
+            color: var(--text);
+        }
+
+        .send-btn:hover, .file-btn:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--main-bg);
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bubble-other);
+            color: var(--text);
+            margin-bottom: 15px;
+            font-family: var(--font-family);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: var(--font-family);
+        }
+
+        .modal-btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .modal-btn-secondary {
+            background: var(--bubble-other);
+            color: var(--text);
+        }
+
+        /* PWA Components */
+        .install-banner, .update-notification {
+            position: fixed;
+            bottom: -100px;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            transition: bottom 0.3s ease;
+        }
+        
+        .install-banner.show, .update-notification.show {
+            bottom: 0;
+        }
+        
+        .install-content, .update-content {
+            background: var(--main-bg);
+            border-top: 2px solid var(--accent);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.3);
+        }
+        
+        .install-icon {
+            font-size: 40px;
+        }
+        
+        .install-text {
+            flex: 1;
+        }
+        
+        .install-text strong {
+            display: block;
+            font-size: 16px;
+        }
+        
+        .install-text small {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .install-btn {
+            background: var(--accent);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text);
+        }
+        
+        .update-content {
+            justify-content: space-between;
+        }
+        
+        .update-content button {
+            background: var(--accent);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        #online-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 999;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        #online-status.online {
+            background: #34c759;
+            color: white;
+        }
+        
+        #online-status.offline {
+            background: #ff3b30;
+            color: white;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--chat-list);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Drag & Drop Zone */
+        .drag-over {
+            border: 2px dashed var(--accent);
+            background: rgba(0,122,255,0.1);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .chat-list {
+                width: 280px;
+            }
+            
+            .bot-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .input-area {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-list {
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease;
+                z-index: 100;
+                height: 100%;
+                width: 85%;
+            }
+            
+            .chat-list.open {
+                left: 0;
+            }
+            
+            .sidebar {
+                width: 55px;
+            }
+            
+            .bot-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="bots-container" id="botsContainer">
+                <div class="spinner"></div>
+            </div>
+            <button class="settings-btn" onclick="openSettings()">⚙️</button>
+        </div>
+
+        <!-- Chat List -->
+        <div class="chat-list" id="chatListSidebar">
+            <div class="chat-list-header">Чаты</div>
+            <div class="chats-scroll" id="chatsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <div>Выберите бота</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat View -->
+        <div class="main-view" id="mainView">
+            <div class="chat-header" id="chatHeader">
+                Выберите чат
+            </div>
+            <div class="messages-area" id="messagesArea" draggable="true" ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📱</div>
+                    <div>Выберите чат для начала общения</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+                <input type="file" id="fileInput" style="display: none" onchange="sendFile(this.files[0])">
+                <input type="text" class="message-input" id="messageInput" placeholder="Напишите сообщение..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">▲</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h2>Настройки</h2>
+            <button class="modal-btn modal-btn-primary" style="width:100%; margin-bottom:15px" onclick="openAddBotModal(); closeSettings()">➕ Добавить бота</button>
+            <div id="botsListSettings"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeSettings()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div class="modal" id="addBotModal">
+        <div class="modal-content">
+            <h2>Добавить бота</h2>
+            <input type="text" class="modal-input" id="botToken" placeholder="Введите токен бота">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeAddBotModal()">Отмена</button>
+                <button class="modal-btn modal-btn-primary" onclick="addBot()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="online-status"></div>
+
+    <script>
+        let socket = io();
+        let activeBotToken = null;
+        let currentChatId = null;
+        let isMobile = window.innerWidth <= 768;
+
+        // Инициализация
+        async function init() {
+            await loadActiveBot();
+            await loadBots();
+            setupWebSocket();
+            checkOnlineStatus();
+            
+            // Закрытие чат-листа на мобильных при клике вне
+            if (isMobile) {
+                document.addEventListener('click', function(e) {
+                    const chatList = document.getElementById('chatListSidebar');
+                    const sidebar = document.querySelector('.sidebar');
+                    if (!chatList.contains(e.target) && !sidebar.contains(e.target)) {
+                        chatList.classList.remove('open');
+                    }
+                });
+            }
+        }
+
+        function setupWebSocket() {
+            socket.on('connect', () => {
+                console.log('WebSocket connected');
+            });
+
+            socket.on('new_message', (data) => {
+                if (activeBotToken === data.token && currentChatId === data.chat_id) {
+                    addMessageToChat(data.message);
+                    playNotificationSound();
+                } else {
+                    loadBots();
+                    if (activeBotToken === data.token) {
+                        loadChats(data.token);
+                    }
+                    // Показываем уведомление
+                    if (document.hidden) {
+                        showBrowserNotification(data.message.text, data.message.sender);
+                    }
+                }
+            });
+        }
+
+        function playNotificationSound() {
+            try {
+                const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            } catch(e) {}
+        }
+
+        function showBrowserNotification(text, sender) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(`Сообщение от ${sender}`, {
+                    body: text,
+                    icon: '/static/icons/icon-192.png',
+                    vibrate: [200, 100, 200]
+                });
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+
+        async function loadBots() {
+            try {
+                const res = await fetch('/api/bots');
+                const botsList = await res.json();
+                renderBots(botsList);
+                if (botsList.length > 0 && !activeBotToken) {
+                    activeBotToken = botsList[0].token;
+                    await switchBot(activeBotToken);
+                }
+            } catch (e) {
+                console.error('Failed to load bots:', e);
+                document.getElementById('botsContainer').innerHTML = '<div class="empty-state">❌ Ошибка загрузки</div>';
+            }
+        }
+
+        function renderBots(botsList) {
+            const container = document.getElementById('botsContainer');
+            container.innerHTML = '';
+            
+            if (botsList.length === 0) {
+                container.innerHTML = '<div class="empty-state">🤖<br>Нет ботов</div>';
+                return;
+            }
+            
+            botsList.forEach(bot => {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'bot-icon';
+                if (activeBotToken === bot.token) {
+                    botDiv.classList.add('active');
+                }
+                botDiv.textContent = bot.username.charAt(0).toUpperCase();
+                if (bot.unread_total > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    badge.textContent = bot.unread_total > 9 ? '9+' : bot.unread_total;
+                    botDiv.appendChild(badge);
+                }
+                botDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    switchBot(bot.token);
+                };
+                container.appendChild(botDiv);
+            });
+        }
+
+        async function loadBotsList() {
+            try {
+                const res = await fetch('/api/bots');
+                const botsList = await res.json();
+                const container = document.getElementById('botsListSettings');
+                if (botsList.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Нет добавленных ботов</div>';
+                } else {
+                    container.innerHTML = botsList.map(bot => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bubble-other); border-radius: 10px; margin-bottom: 10px;">
+                            <div>🤖 ${bot.username}</div>
+                            <button class="modal-btn modal-btn-secondary" onclick="removeBot('${bot.token}')">Удалить</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load bots list:', e);
+            }
+        }
+
+        async function removeBot(token) {
+            if (confirm('Удалить этого бота?')) {
+                await fetch(`/api/bots/${token}`, { method: 'DELETE' });
+                if (activeBotToken === token) {
+                    activeBotToken = null;
+                    currentChatId = null;
+                    document.getElementById('chatHeader').textContent = 'Выберите чат';
+                    document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📱</div><div>Выберите чат для начала общения</div></div>';
+                }
+                await loadBots();
+                await loadBotsList();
+            }
+        }
+
+        async function switchBot(token) {
+            activeBotToken = token;
+            await fetch('/api/bots/' + token + '/activate', { method: 'POST' });
+            
+            document.querySelectorAll('.bot-icon').forEach(icon => {
+                icon.classList.remove('active');
+            });
+            if (event && event.target) {
+                const target = event.target.closest('.bot-icon');
+                if (target) target.classList.add('active');
+            }
+            
+            currentChatId = null;
+            document.getElementById('chatHeader').textContent = 'Выберите чат';
+            document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Выберите чат</div></div>';
+            await loadChats(token);
+        }
+
+        async function loadChats(token) {
+            try {
+                const res = await fetch(`/api/chats/${token}`);
+                const chats = await res.json();
+                renderChats(chats);
+            } catch (e) {
+                console.error('Failed to load chats:', e);
+            }
+        }
+
+        function renderChats(chats) {
+            const container = document.getElementById('chatsList');
+            container.innerHTML = '';
+            
+            if (chats.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет чатов</div><div style="font-size:12px">Напишите боту первым</div></div>';
+                return;
+            }
+            
+            chats.forEach(chat => {
+                const chatDiv = document.createElement('div');
+                chatDiv.className = 'chat-item';
+                if (currentChatId === chat.id) {
+                    chatDiv.classList.add('active');
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'chat-name';
+                nameSpan.textContent = chat.name;
+                chatDiv.appendChild(nameSpan);
+                
+                if (chat.unread > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'chat-unread';
+                    badge.textContent = chat.unread;
+                    chatDiv.appendChild(badge);
+                }
+                
+                chatDiv.onclick = () => selectChat(chat.id, chat.name);
+                container.appendChild(chatDiv);
+            });
+        }
+
+        async function selectChat(chatId, chatName) {
+            currentChatId = chatId;
+            document.getElementById('chatHeader').textContent = chatName;
+            
+            await fetch(`/api/chats/${activeBotToken}/${chatId}/mark_read`, { method: 'POST' });
+            await loadMessages(chatId);
+            await loadChats(activeBotToken);
+            
+            // Закрываем чат-лист на мобильных
+            if (isMobile) {
+                document.getElementById('chatListSidebar').classList.remove('open');
+            }
+        }
+
+        async function loadMessages(chatId) {
+            try {
+                const res = await fetch(`/api/messages/${activeBotToken}/${chatId}`);
+                const messages = await res.json();
+                renderMessages(messages);
+            } catch (e) {
+                console.error('Failed to load messages:', e);
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messagesArea');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет сообщений</div><div style="font-size:12px">Начните диалог</div></div>';
+                return;
+            }
+            
+            messages.forEach(msg => {
+                addMessageToChat(msg);
+            });
+            
+            scrollToBottom();
+        }
+
+        function addMessageToChat(msg) {
+            const container = document.getElementById('messagesArea');
+            
+            // Удаляем empty state если он есть
+            if (container.querySelector('.empty-state')) {
+                container.innerHTML = '';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.is_my ? 'message-own' : 'message-other'}`;
+            
+            if (!msg.is_my && msg.sender) {
+                const senderSpan = document.createElement('div');
+                senderSpan.className = 'message-sender';
+                senderSpan.textContent = msg.sender;
+                messageDiv.appendChild(senderSpan);
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${msg.is_my ? 'bubble-own' : 'bubble-other'}`;
+            bubble.textContent = msg.text;
+            messageDiv.appendChild(bubble);
+            
+            const timeSpan = document.createElement('div');
+            timeSpan.className = 'message-time';
+            const date = new Date(msg.time);
+            timeSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timeSpan);
+            
+            container.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !activeBotToken || !currentChatId) return;
+            
+            // Проверка на офлайн
+            if (!navigator.onLine) {
+                alert('Нет подключения к интернету. Сообщение будет отправлено при восстановлении связи.');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: activeBotToken,
+                        chat_id: currentChatId,
+                        text: text
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    addMessageToChat(data.message);
+                    input.value = '';
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Failed to send message:', e);
+                alert('Ошибка при отправке');
+            }
+        }
+
+        async function sendFile(file) {
+            if (!file || !activeBotToken || !currentChatId) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1];
+                
+                try {
+                    const res = await fetch('/api/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: activeBotToken,
+                            chat_id: currentChatId,
+                            file: {
+                                name: file.name,
+                                data: base64
+                            }
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    if (data.success) {
+                        addMessageToChat(data.message);
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                } catch (e) {
+                    console.error('Failed to send file:', e);
+                    alert('Ошибка при отправке файла');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                sendFile(files[0]);
+            }
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messagesArea');
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+        }
+
+        function openSettings() {
+            loadBotsList();
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function openAddBotModal() {
+            closeSettings();
+            document.getElementById('addBotModal').classList.add('active');
+        }
+
+        function closeAddBotModal() {
+            document.getElementById('addBotModal').classList.remove('active');
+            document.getElementById('botToken').value = '';
+        }
+
+        async function addBot() {
+            const token = document.getElementById('botToken').value.trim();
+            if (!token) return;
+            
+            const addBtn = event.target;
+            addBtn.disabled = true;
+            addBtn.textContent = 'Добавление...';
+            
+            try {
+                const res = await fetch('/api/bots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    closeAddBotModal();
+                    await loadBots();
+                    alert(`Бот @${data.username} успешно добавлен!`);
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (e) {
+                console.error('Failed to add bot:', e);
+                alert('Ошибка при добавлении бота');
+            } finally {
+                addBtn.disabled = false;
+                addBtn.textContent = 'Добавить';
+            }
+        }
+
+        async function loadActiveBot() {
+            try {
+                const res = await fetch('/api/bots/active');
+                const data = await res.json();
+                if (data.token) {
+                    activeBotToken = data.token;
+                }
+            } catch (e) {
+                console.error('Failed to load active bot:', e);
+            }
+        }
+
+        function checkOnlineStatus() {
+            const statusDiv = document.getElementById('online-status');
+            const isOnline = navigator.onLine;
+            
+            statusDiv.textContent = isOnline ? '🟢 Онлайн' : '🔴 Офлайн';
+            statusDiv.className = isOnline ? 'online' : 'offline';
+            
+            if (!isOnline) {
+                const warning = document.createElement('div');
+                warning.className = 'offline-warning';
+                warning.innerHTML = '<div class="warning-content">⚠️ Нет подключения к интернету</div>';
+                document.body.appendChild(warning);
+                setTimeout(() => warning.remove(), 3000);
+            }
+        }
+
+        // PWA Installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallPromotion();
+        });
+
+        function showInstallPromotion() {
+            const installBanner = document.createElement('div');
+            installBanner.className = 'install-banner';
+            installBanner.innerHTML = `
+                <div class="install-content">
+                    <div class="install-icon">📱</div>
+                    <div class="install-text">
+                        <strong>Установить приложение</strong>
+                        <small>Быстрый доступ с экрана телефона</small>
+                    </div>
+                    <button class="install-btn">Установить</button>
+                    <button class="close-btn">✕</button>
+                </div>
+            `;
+            
+            document.body.appendChild(installBanner);
+            
+            installBanner.querySelector('.install-btn').onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    installBanner.remove();
+                }
+            };
+            
+            installBanner.querySelector('.close-btn').onclick = () => {
+                installBanner.remove();
+            };
+            
+            setTimeout(() => {
+                installBanner.classList.add('show');
+            }, 1000);
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed: ', error);
+                    });
+            });
+        }
+
+        // Event Listeners
+        window.addEventListener('online', checkOnlineStatus);
+        window.addEventListener('offline', checkOnlineStatus);
+        
+        // Drag & Drop visual feedback
+        const messagesArea = document.getElementById('messagesArea');
+        messagesArea.ondragenter = (e) => {
+            e.preventDefault();
+            messagesArea.classList.add('drag-over');
+        };
+        messagesArea.ondragleave = (e) => {
+            messagesArea.classList.remove('drag-over');
+        };
+        messagesArea.ondragover = (e) => {
+            e.preventDefault();
+        };
+        messagesArea.ondrop = handleFileDrop;
+
+        // Запрос разрешения на уведомления
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Startup
+        init();
+    </script>
+</body>
+</html>

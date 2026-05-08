@@ -1,0 +1,32 @@
+{
+    "bots": {
+        "8793028772:AAFImwFOcIN-u0QQX9itVUzLkoQ0qCtiYXQ": {
+            "username": "pintogramm_bot",
+            "chats": {
+                "1615826277": {
+                    "name": "𝖆𝖑𝖎𝖒",
+                    "unread": 0
+                }
+            },
+            "history": {
+                "1615826277": [
+                    {
+                        "text": "дд",
+                        "is_my": false,
+                        "time": "2026-05-08T16:39:23.463096",
+                        "sender": "𝖆𝖑𝖎𝖒"
+                    },
+                    {
+                        "text": "вдвдв",
+                        "is_my": true,
+                        "time": "2026-05-08T16:39:32.692977",
+                        "sender": "You"
+                    }
+                ]
+            }
+        }
+    },
+    "settings": {
+        "current_theme": "green"
+    }
+}
