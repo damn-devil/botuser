@@ -7,10 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TG Bot">
     <meta name="theme-color" content="#007aff">
-    <meta name="format-detection" content="telephone=no">
     
     <title>Telegram Multi-Bot</title>
-    
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
     <style>
@@ -21,26 +19,33 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* CSS Variables */
         :root {
-            --sidebar: #101010;
             --main-bg: #1e1e1e;
-            --chat-list: #151515;
+            --surface: #2c2c2e;
+            --surface-light: #3a3a3c;
             --accent: #007aff;
+            --accent-dark: #0051d5;
             --text: #ffffff;
-            --text-secondary: #888888;
+            --text-secondary: #8e8e93;
+            --text-tertiary: #636366;
             --bubble-own: #007aff;
-            --bubble-other: #2d2d2d;
-            --hover: #2a2a2a;
+            --bubble-other: #2c2c2e;
             --border: #3a3a3a;
-            --bubble-radius: 20px;
+            --border-light: #4a4a4c;
+            --success: #34c759;
+            --error: #ff3b30;
+            --warning: #ff9500;
+            --bubble-radius-own: 20px;
+            --bubble-radius-other: 20px;
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-size: 14px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
             
-            --safe-area-top: env(safe-area-inset-top, 0px);
-            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-            --safe-area-left: env(safe-area-inset-left, 0px);
-            --safe-area-right: env(safe-area-inset-right, 0px);
+            --nav-bg: rgba(30, 30, 30, 0.85);
+            --nav-blur: 25px;
+            --nav-border: 0.5px solid rgba(255, 255, 255, 0.1);
+            --nav-height: 64px;
+            --nav-corner-radius: 0px;
         }
 
         body {
@@ -48,188 +53,249 @@
             background: var(--main-bg);
             color: var(--text);
             overflow: hidden;
-            font-size: var(--font-size);
-            position: fixed;
-            width: 100%;
-            height: 100%;
+            height: 100vh;
+            height: -webkit-fill-available;
         }
 
+        /* Главный контейнер */
         .app {
-            display: flex;
             height: 100%;
-            width: 100%;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 80px;
-            background: var(--sidebar);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 0;
-            padding-bottom: calc(20px + var(--safe-area-bottom));
-            z-index: 10;
-        }
-
-        .bots-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            overflow-y: auto;
-            padding: 10px;
-            width: 100%;
-        }
-
-        .bot-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 20px;
-            font-weight: bold;
             position: relative;
         }
 
-        .bot-icon.active {
-            box-shadow: 0 0 0 3px white;
+        /* Плавающий навбар сверху */
+        .floating-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1001;
+            background: var(--nav-bg);
+            backdrop-filter: blur(var(--nav-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--nav-blur)) saturate(180%);
+            border-bottom: var(--nav-border);
+            border-radius: var(--nav-corner-radius);
+            padding-top: var(--safe-top);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .unread-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ff3b30;
-            color: white;
-            border-radius: 50%;
-            min-width: 20px;
-            height: 20px;
-            font-size: 11px;
+        .nav-content {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 0 4px;
+            justify-content: space-between;
+            padding: 12px 16px;
+            gap: 12px;
+            min-height: var(--nav-height);
         }
 
-        .settings-btn {
-            width: 50px;
-            height: 50px;
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            text-align: center;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             cursor: pointer;
-            font-size: 24px;
-            color: var(--text);
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        /* Chat List */
-        .chat-list {
-            width: 300px;
-            background: var(--chat-list);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 5;
-        }
-
-        .chat-list-header {
-            padding: 20px;
-            padding-top: calc(20px + var(--safe-area-top));
-            border-bottom: 1px solid var(--border);
-            font-weight: bold;
-            font-size: 18px;
+            transition: all 0.2s ease;
             color: var(--text);
+            flex-shrink: 0;
         }
 
-        .chats-scroll {
+        .nav-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-btn.hidden {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Контентные экраны */
+        .screen {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
-        }
-
-        .chat-item {
-            padding: 12px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--text);
-        }
-
-        .chat-item:hover {
-            background: var(--hover);
-        }
-
-        .chat-item.active {
-            background: var(--accent);
-        }
-
-        .chat-unread {
-            background: var(--accent);
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        /* Main Chat */
-        .main-view {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--main-bg);
-        }
-
-        .chat-header {
-            padding: 20px;
-            padding-top: calc(20px + var(--safe-area-top));
-            background: color-mix(in srgb, var(--main-bg) 95%, black);
-            border-bottom: 1px solid var(--border);
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--text);
-        }
-
-        .messages-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            padding-top: calc(var(--nav-height) + var(--safe-top));
+            padding-bottom: 20px;
             -webkit-overflow-scrolling: touch;
         }
 
-        .message {
-            display: flex;
-            flex-direction: column;
-            max-width: 70%;
-            animation: fadeIn 0.3s ease;
+        .screen-content {
+            padding: 0 16px;
         }
 
-        @keyframes fadeIn {
+        /* Скрытие экранов */
+        .screen.hidden {
+            display: none;
+        }
+
+        /* Карточки ботов */
+        .bots-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bot-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .bot-card:active {
+            transform: scale(0.98);
+            background: var(--surface-light);
+        }
+
+        @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        .bot-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .bot-info {
+            flex: 1;
+        }
+
+        .bot-name {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bot-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .bot-unread {
+            background: var(--accent);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Элементы чатов */
+        .chat-item {
+            padding: 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 0.5px solid var(--border);
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .chat-item:active {
+            background: var(--surface);
+            margin: 0 -16px;
+            padding: 14px 16px;
+            border-radius: 12px;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chat-preview {
+            font-size: 13px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-meta {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .chat-unread-badge {
+            background: var(--accent);
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Сообщения - свои справа, чужие слева */
+        .messages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 80px;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            animation: fadeInUp 0.2s ease;
         }
 
         .message-own {
@@ -243,165 +309,155 @@
         .message-sender {
             font-size: 11px;
             margin-bottom: 4px;
-            padding-left: 12px;
             color: var(--text-secondary);
+        }
+
+        .message-own .message-sender {
+            text-align: right;
+            padding-right: 12px;
+        }
+
+        .message-other .message-sender {
+            text-align: left;
+            padding-left: 12px;
         }
 
         .bubble {
             padding: 10px 16px;
-            border-radius: var(--bubble-radius);
             word-wrap: break-word;
-            font-size: var(--font-size);
+            font-size: 15px;
             line-height: 1.4;
         }
 
         .bubble-own {
             background: var(--bubble-own);
             color: white;
+            border-radius: var(--bubble-radius-own);
             border-bottom-right-radius: 4px;
         }
 
         .bubble-other {
             background: var(--bubble-other);
             color: var(--text);
+            border-radius: var(--bubble-radius-other);
             border-bottom-left-radius: 4px;
         }
 
         .message-time {
             font-size: 10px;
             margin-top: 4px;
-            padding: 0 12px;
             color: var(--text-secondary);
         }
 
-        .input-area {
-            padding: 15px 20px;
-            padding-bottom: calc(15px + var(--safe-area-bottom));
+        .message-own .message-time {
+            text-align: right;
+            padding-right: 12px;
+        }
+
+        .message-other .message-time {
+            text-align: left;
+            padding-left: 12px;
+        }
+
+        /* Поле ввода в стиле iOS */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            padding-bottom: calc(12px + var(--safe-bottom));
             background: var(--main-bg);
+            border-top: 0.5px solid var(--border);
+            z-index: 100;
+        }
+
+        .input-wrapper {
             display: flex;
             gap: 10px;
             align-items: center;
-            border-top: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 30px;
+            padding: 4px 4px 4px 16px;
         }
 
         .message-input {
             flex: 1;
-            padding: 12px 18px;
+            padding: 10px 0;
             border: none;
-            border-radius: 25px;
-            background: var(--bubble-other);
+            background: transparent;
             color: var(--text);
-            font-size: var(--font-size);
+            font-size: 16px;
             outline: none;
-            font-family: var(--font-family);
         }
 
-        .send-btn, .file-btn {
-            width: 45px;
-            height: 45px;
+        .attach-btn, .send-btn {
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: var(--accent);
             border: none;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 18px;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .file-btn {
-            background: var(--bubble-other);
-            color: var(--text);
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--main-bg);
-            border-radius: 16px;
-            padding: 30px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-content h2 {
-            margin-bottom: 20px;
-            color: var(--text);
-        }
-
-        .modal-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--bubble-other);
-            color: var(--text);
-            margin-bottom: 15px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        .modal-btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .modal-btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .modal-btn-secondary {
-            background: var(--bubble-other);
-            color: var(--text);
-        }
-
-        /* Theme Grid */
-        .theme-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .theme-card {
-            background: var(--bubble-other);
-            border-radius: 12px;
-            padding: 15px;
-            cursor: pointer;
-            text-align: center;
             transition: all 0.2s;
         }
 
-        .theme-card:hover {
-            transform: translateY(-2px);
+        .attach-btn {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        /* Полноэкранное окно настроек */
+        .fullscreen-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--main-bg);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .fullscreen-modal.active {
+            display: flex;
+            transform: translateX(0);
+        }
+
+        .modal-content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            padding-bottom: calc(20px + var(--safe-bottom));
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .theme-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
         .theme-card.active {
@@ -410,50 +466,105 @@
 
         .theme-preview {
             width: 100%;
-            height: 60px;
+            height: 50px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .color-picker-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+        .theme-name {
+            font-size: 11px;
         }
 
-        .color-label {
-            width: 120px;
-            font-size: 12px;
+        .settings-section {
+            margin-bottom: 28px;
+        }
+
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+
+        .setting-row {
+            margin-bottom: 16px;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+            color: var(--text-secondary);
         }
 
         .color-input {
-            width: 50px;
-            height: 40px;
+            width: 100%;
+            height: 44px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
+            background: var(--surface);
             cursor: pointer;
         }
 
         .slider-input {
-            flex: 1;
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
         }
 
-        .range-value {
-            margin-left: 10px;
-            font-size: 12px;
-            min-width: 45px;
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        .add-bot-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .add-bot-btn:active {
+            transform: scale(0.98);
+        }
+
+        .bot-manage-item {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .remove-bot-btn {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         .empty-state {
             text-align: center;
             padding: 40px;
             color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
         }
 
         .spinner {
@@ -471,154 +582,172 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 65px;
-            }
-            
-            .chat-list {
-                position: fixed;
-                top: 0;
-                left: 0;
-                bottom: 0;
-                z-index: 200;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                width: 85%;
-                max-width: 320px;
-            }
-            
-            .chat-list.open {
-                transform: translateX(0);
-                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-            }
-            
-            .chat-list-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 199;
-            }
-            
-            .chat-list-overlay.active {
-                display: block;
-            }
-            
-            .bot-icon {
-                width: 45px;
-                height: 45px;
-                font-size: 18px;
-            }
-            
-            .message {
-                max-width: 85%;
-            }
-            
-            .message-input {
-                font-size: 16px;
-            }
-        }
-
-        #online-status {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            z-index: 999;
-            background: rgba(0,0,0,0.8);
-        }
-        
-        #online-status.online {
-            background: #34c759;
-            color: white;
-        }
-        
-        #online-status.offline {
-            background: #ff3b30;
-            color: white;
-        }
-
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--chat-list);
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 3px;
-        }
-        
-        .drag-over {
-            border: 2px dashed var(--accent);
-            background: rgba(0,122,255,0.1);
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <div class="chat-list-overlay" id="chatListOverlay" onclick="closeChatList()"></div>
-        
-        <div class="sidebar">
-            <div class="bots-container" id="botsContainer">
-                <div class="spinner"></div>
+        <!-- Плавающий навбар сверху -->
+        <div class="floating-nav" id="floatingNav">
+            <div class="nav-content">
+                <button class="nav-btn" id="navBackBtn" onclick="handleBack()">←</button>
+                <div class="nav-title" id="navTitle">Telegram Bot</div>
+                <button class="nav-btn" id="navSettingsBtn" onclick="openSettings()">⚙️</button>
             </div>
-            <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
 
-        <div class="chat-list" id="chatListSidebar">
-            <div class="chat-list-header">Чаты</div>
-            <div class="chats-scroll" id="chatsList"></div>
+        <!-- Экран выбора бота -->
+        <div class="screen" id="botsScreen">
+            <div class="screen-content" id="botsList"></div>
         </div>
 
-        <div class="main-view">
-            <div class="chat-header" id="chatHeader">Выберите чат</div>
-            <div class="messages-area" id="messagesArea"></div>
-            <div class="input-area">
-                <button class="file-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+        <!-- Экран списка чатов -->
+        <div class="screen hidden" id="chatsScreen">
+            <div class="screen-content" id="chatsList"></div>
+        </div>
+
+        <!-- Экран чата -->
+        <div class="screen hidden" id="chatScreen">
+            <div class="screen-content" id="messagesContainer"></div>
+        </div>
+
+        <!-- Поле ввода (только для чата) -->
+        <div class="input-container" id="inputContainer" style="display: none;">
+            <div class="input-wrapper">
+                <button class="attach-btn" onclick="document.getElementById('fileInput').click()">📎</button>
                 <input type="file" id="fileInput" style="display: none" onchange="sendFile(this.files[0])">
-                <input type="text" class="message-input" id="messageInput" placeholder="Напишите сообщение..." onkeypress="handleKeyPress(event)">
-                <button class="send-btn" onclick="sendMessage()">▲</button>
+                <input type="text" class="message-input" id="messageInput" placeholder="Сообщение..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+
+        <!-- Полноэкранное окно настроек -->
+        <div class="fullscreen-modal" id="settingsModal">
+            <div class="modal-content-scroll">
+                <div class="modal-header">🎨 Настройки тем</div>
+                
+                <div class="settings-section">
+                    <div class="settings-section-title">Готовые темы</div>
+                    <div class="theme-grid" id="themesGrid"></div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">🎨 Цвета интерфейса</div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">🌙 Основной фон</div>
+                        <input type="color" id="mainBgColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">🎯 Акцентный цвет</div>
+                        <input type="color" id="accentColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">💬 Цвет моих сообщений</div>
+                        <input type="color" id="bubbleOwnColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">👤 Цвет сообщений собеседника</div>
+                        <input type="color" id="bubbleOtherColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">📝 Цвет текста</div>
+                        <input type="color" id="textColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">🔘 Цвет фона элементов</div>
+                        <input type="color" id="surfaceColor" class="color-input">
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">📏 Цвет границ</div>
+                        <input type="color" id="borderColor" class="color-input">
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">📐 Скругления</div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">💬 Скругление моих сообщений</div>
+                        <input type="range" id="bubbleRadiusOwn" min="4" max="40" class="slider-input">
+                        <span id="radiusOwnValue" style="font-size: 12px; margin-left: 8px;">20px</span>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">👤 Скругление сообщений других</div>
+                        <input type="range" id="bubbleRadiusOther" min="4" max="40" class="slider-input">
+                        <span id="radiusOtherValue" style="font-size: 12px; margin-left: 8px;">20px</span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">✨ Настройка навбара</div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">🎨 Прозрачность навбара (0-100%)</div>
+                        <input type="range" id="navOpacity" min="0" max="100" class="slider-input">
+                        <span id="navOpacityValue" style="font-size: 12px; margin-left: 8px;">85%</span>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">🔮 Интенсивность размытия (1-40px)</div>
+                        <input type="range" id="navBlur" min="1" max="40" class="slider-input">
+                        <span id="navBlurValue" style="font-size: 12px; margin-left: 8px;">25px</span>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">📐 Скругление углов навбара (0-30px)</div>
+                        <input type="range" id="navCornerRadius" min="0" max="30" class="slider-input">
+                        <span id="navCornerRadiusValue" style="font-size: 12px; margin-left: 8px;">0px</span>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-label">📏 Высота навбара (50-80px)</div>
+                        <input type="range" id="navHeight" min="50" max="80" class="slider-input">
+                        <span id="navHeightValue" style="font-size: 12px; margin-left: 8px;">64px</span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <button class="add-bot-btn" onclick="applyCustomTheme()" style="background: var(--accent);">✨ Применить тему</button>
+                    <button class="add-bot-btn" onclick="saveCustomTheme()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">💾 Сохранить тему</button>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">🤖 Управление ботами</div>
+                    <button class="add-bot-btn" onclick="showAddBotDialog()">➕ Добавить бота</button>
+                    <div id="botsManageList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Диалог добавления бота -->
+        <div class="fullscreen-modal" id="addBotDialog">
+            <div class="modal-content-scroll">
+                <div class="modal-header">➕ Добавить бота</div>
+                <input type="text" id="newBotToken" placeholder="Введите токен бота" style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); margin-bottom: 16px; font-size: 14px;">
+                <button class="add-bot-btn" onclick="addBot()">Добавить</button>
+                <button class="add-bot-btn" onclick="closeAddBotDialog()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">Отмена</button>
             </div>
         </div>
     </div>
-
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <h2>Настройки</h2>
-            <div class="theme-grid" id="themesGrid"></div>
-            <hr style="margin: 15px 0; border-color: var(--border);">
-            <button class="modal-btn modal-btn-primary" style="width:100%; margin-bottom:15px" onclick="openAddBotModal(); closeSettings()">➕ Добавить бота</button>
-            <div id="botsListSettings"></div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-secondary" onclick="closeSettings()">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Bot Modal -->
-    <div class="modal" id="addBotModal">
-        <div class="modal-content">
-            <h2>Добавить бота</h2>
-            <input type="text" class="modal-input" id="botToken" placeholder="Введите токен бота">
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-secondary" onclick="closeAddBotModal()">Отмена</button>
-                <button class="modal-btn modal-btn-primary" onclick="addBot()">Добавить</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="online-status"></div>
 
     <script>
         let socket = io();
@@ -626,55 +755,269 @@
         let currentChatId = null;
         let currentTheme = null;
         let availableThemes = {};
-        let isMobile = window.innerWidth <= 768;
+        let currentScreen = 'bots';
+        let currentBotName = '';
 
-        // ========== THEMES ==========
+        // ========== НАВИГАЦИЯ ==========
+        function navigateTo(screen, title, showBack = true) {
+            document.getElementById('botsScreen').classList.add('hidden');
+            document.getElementById('chatsScreen').classList.add('hidden');
+            document.getElementById('chatScreen').classList.add('hidden');
+            
+            document.getElementById(`${screen}Screen`).classList.remove('hidden');
+            
+            const navTitle = document.getElementById('navTitle');
+            const backBtn = document.getElementById('navBackBtn');
+            const settingsBtn = document.getElementById('navSettingsBtn');
+            
+            navTitle.style.opacity = '0';
+            setTimeout(() => {
+                navTitle.textContent = title;
+                navTitle.style.opacity = '1';
+            }, 150);
+            
+            if (screen === 'bots') {
+                backBtn.classList.add('hidden');
+                settingsBtn.classList.remove('hidden');
+            } else {
+                if (showBack) {
+                    backBtn.classList.remove('hidden');
+                } else {
+                    backBtn.classList.add('hidden');
+                }
+                settingsBtn.classList.remove('hidden');
+            }
+            
+            const inputContainer = document.getElementById('inputContainer');
+            if (screen === 'chat') {
+                inputContainer.style.display = 'block';
+                setTimeout(() => scrollToBottom(), 100);
+            } else {
+                inputContainer.style.display = 'none';
+            }
+            
+            currentScreen = screen;
+        }
+        
+        function handleBack() {
+            if (currentScreen === 'chat') {
+                navigateTo('chats', currentBotName || 'Чаты', true);
+                if (activeBotToken) loadChats(activeBotToken);
+            } else if (currentScreen === 'chats') {
+                navigateTo('bots', 'Telegram Bot', false);
+                loadBots();
+            }
+        }
+        
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.add('active');
+            loadBotsManageList();
+            loadCurrentColorsToSettings();
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+        
+        function loadCurrentColorsToSettings() {
+            document.getElementById('mainBgColor').value = getComputedStyle(document.documentElement).getPropertyValue('--main-bg').trim() || '#1e1e1e';
+            document.getElementById('accentColor').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#007aff';
+            document.getElementById('bubbleOwnColor').value = getComputedStyle(document.documentElement).getPropertyValue('--bubble-own').trim() || '#007aff';
+            document.getElementById('bubbleOtherColor').value = getComputedStyle(document.documentElement).getPropertyValue('--bubble-other').trim() || '#2c2c2e';
+            document.getElementById('textColor').value = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ffffff';
+            document.getElementById('surfaceColor').value = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#2c2c2e';
+            document.getElementById('borderColor').value = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#3a3a3a';
+            
+            const ownRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bubble-radius-own')) || 20;
+            const otherRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bubble-radius-other')) || 20;
+            
+            document.getElementById('bubbleRadiusOwn').value = ownRadius;
+            document.getElementById('bubbleRadiusOther').value = otherRadius;
+            document.getElementById('radiusOwnValue').textContent = ownRadius + 'px';
+            document.getElementById('radiusOtherValue').textContent = otherRadius + 'px';
+            
+            // Настройки навбара
+            const navBg = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg').trim();
+            const opacityMatch = navBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+            if (opacityMatch) {
+                const opacity = Math.round(parseFloat(opacityMatch[4]) * 100);
+                document.getElementById('navOpacity').value = opacity;
+                document.getElementById('navOpacityValue').textContent = opacity + '%';
+            } else {
+                document.getElementById('navOpacity').value = 85;
+                document.getElementById('navOpacityValue').textContent = '85%';
+            }
+            
+            const blur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-blur')) || 25;
+            document.getElementById('navBlur').value = blur;
+            document.getElementById('navBlurValue').textContent = blur + 'px';
+            
+            const cornerRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-corner-radius')) || 0;
+            document.getElementById('navCornerRadius').value = cornerRadius;
+            document.getElementById('navCornerRadiusValue').textContent = cornerRadius + 'px';
+            
+            const height = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+            document.getElementById('navHeight').value = height;
+            document.getElementById('navHeightValue').textContent = height + 'px';
+            
+            document.getElementById('bubbleRadiusOwn').oninput = (e) => {
+                document.getElementById('radiusOwnValue').textContent = e.target.value + 'px';
+            };
+            document.getElementById('bubbleRadiusOther').oninput = (e) => {
+                document.getElementById('radiusOtherValue').textContent = e.target.value + 'px';
+            };
+            
+            document.getElementById('navOpacity').oninput = (e) => {
+                document.getElementById('navOpacityValue').textContent = e.target.value + '%';
+            };
+            document.getElementById('navBlur').oninput = (e) => {
+                document.getElementById('navBlurValue').textContent = e.target.value + 'px';
+            };
+            document.getElementById('navCornerRadius').oninput = (e) => {
+                document.getElementById('navCornerRadiusValue').textContent = e.target.value + 'px';
+            };
+            document.getElementById('navHeight').oninput = (e) => {
+                document.getElementById('navHeightValue').textContent = e.target.value + 'px';
+            };
+        }
+        
+        function applyCustomTheme() {
+            const ownRadius = parseInt(document.getElementById('bubbleRadiusOwn').value);
+            const otherRadius = parseInt(document.getElementById('bubbleRadiusOther').value);
+            const navOpacity = parseInt(document.getElementById('navOpacity').value);
+            const navBlur = parseInt(document.getElementById('navBlur').value);
+            const navCornerRadius = parseInt(document.getElementById('navCornerRadius').value);
+            const navHeight = parseInt(document.getElementById('navHeight').value);
+            
+            const mainBg = document.getElementById('mainBgColor').value;
+            const r = parseInt(mainBg.slice(1,3), 16);
+            const g = parseInt(mainBg.slice(3,5), 16);
+            const b = parseInt(mainBg.slice(5,7), 16);
+            const navBg = `rgba(${r}, ${g}, ${b}, ${navOpacity / 100})`;
+            
+            document.documentElement.style.setProperty('--main-bg', mainBg);
+            document.documentElement.style.setProperty('--accent', document.getElementById('accentColor').value);
+            document.documentElement.style.setProperty('--bubble-own', document.getElementById('bubbleOwnColor').value);
+            document.documentElement.style.setProperty('--bubble-other', document.getElementById('bubbleOtherColor').value);
+            document.documentElement.style.setProperty('--text', document.getElementById('textColor').value);
+            document.documentElement.style.setProperty('--surface', document.getElementById('surfaceColor').value);
+            document.documentElement.style.setProperty('--border', document.getElementById('borderColor').value);
+            document.documentElement.style.setProperty('--bubble-radius-own', ownRadius + 'px');
+            document.documentElement.style.setProperty('--bubble-radius-other', otherRadius + 'px');
+            document.documentElement.style.setProperty('--nav-bg', navBg);
+            document.documentElement.style.setProperty('--nav-blur', navBlur + 'px');
+            document.documentElement.style.setProperty('--nav-corner-radius', navCornerRadius + 'px');
+            document.documentElement.style.setProperty('--nav-height', navHeight + 'px');
+            
+            document.querySelector('.floating-nav').style.height = navHeight + 'px';
+            
+            document.getElementById('radiusOwnValue').textContent = ownRadius + 'px';
+            document.getElementById('radiusOtherValue').textContent = otherRadius + 'px';
+        }
+        
+        async function saveCustomTheme() {
+            const themeName = prompt('Введите название темы:');
+            if (!themeName) return;
+            
+            const themeId = 'custom_' + Date.now();
+            const customTheme = {
+                id: themeId,
+                name: themeName,
+                config: {
+                    name: themeName,
+                    colors: {
+                        main_bg: document.getElementById('mainBgColor').value,
+                        accent: document.getElementById('accentColor').value,
+                        bubble_own: document.getElementById('bubbleOwnColor').value,
+                        bubble_other: document.getElementById('bubbleOtherColor').value,
+                        text: document.getElementById('textColor').value,
+                        text_secondary: '#8e8e93',
+                        surface: document.getElementById('surfaceColor').value,
+                        border: document.getElementById('borderColor').value
+                    },
+                    bubble_radius_own: parseInt(document.getElementById('bubbleRadiusOwn').value),
+                    bubble_radius_other: parseInt(document.getElementById('bubbleRadiusOther').value),
+                    nav_opacity: parseInt(document.getElementById('navOpacity').value),
+                    nav_blur: parseInt(document.getElementById('navBlur').value),
+                    nav_corner_radius: parseInt(document.getElementById('navCornerRadius').value),
+                    nav_height: parseInt(document.getElementById('navHeight').value),
+                    font_size: 14
+                }
+            };
+            
+            try {
+                const res = await fetch('/api/themes/custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customTheme)
+                });
+                
+                if (res.ok) {
+                    alert('Тема сохранена!');
+                    await loadThemes();
+                }
+            } catch (e) {
+                console.error('Failed to save theme:', e);
+                alert('Ошибка при сохранении темы');
+            }
+        }
+        
         async function loadThemes() {
             try {
                 const res = await fetch('/api/themes');
                 const data = await res.json();
                 availableThemes = data.available;
                 currentTheme = data.current;
-                applyTheme(currentTheme);
                 renderThemesGrid();
+                if (availableThemes[currentTheme]) {
+                    applyThemeFromObject(availableThemes[currentTheme]);
+                }
             } catch (e) {
                 console.error('Failed to load themes:', e);
             }
         }
-
-        function applyTheme(themeId) {
-            const theme = availableThemes[themeId];
+        
+        function applyThemeFromObject(theme) {
             if (!theme) return;
-            
             const colors = theme.colors;
-            document.documentElement.style.setProperty('--sidebar', colors.sidebar);
             document.documentElement.style.setProperty('--main-bg', colors.main_bg);
-            document.documentElement.style.setProperty('--chat-list', colors.chat_list);
+            document.documentElement.style.setProperty('--surface', colors.surface || colors.bubble_other);
             document.documentElement.style.setProperty('--accent', colors.accent);
             document.documentElement.style.setProperty('--text', colors.text);
             document.documentElement.style.setProperty('--text-secondary', colors.text_secondary);
             document.documentElement.style.setProperty('--bubble-own', colors.bubble_own);
             document.documentElement.style.setProperty('--bubble-other', colors.bubble_other);
-            document.documentElement.style.setProperty('--hover', colors.hover);
             document.documentElement.style.setProperty('--border', colors.border);
-            document.documentElement.style.setProperty('--bubble-radius', theme.bubble_radius + 'px');
-            document.documentElement.style.setProperty('--font-size', theme.font_size + 'px');
+            document.documentElement.style.setProperty('--bubble-radius-own', (theme.bubble_radius_own || theme.bubble_radius || 20) + 'px');
+            document.documentElement.style.setProperty('--bubble-radius-other', (theme.bubble_radius_other || theme.bubble_radius || 20) + 'px');
+            
+            if (theme.nav_opacity !== undefined) {
+                const mainBg = colors.main_bg;
+                const r = parseInt(mainBg.slice(1,3), 16);
+                const g = parseInt(mainBg.slice(3,5), 16);
+                const b = parseInt(mainBg.slice(5,7), 16);
+                document.documentElement.style.setProperty('--nav-bg', `rgba(${r}, ${g}, ${b}, ${theme.nav_opacity / 100})`);
+                document.documentElement.style.setProperty('--nav-blur', (theme.nav_blur || 25) + 'px');
+                document.documentElement.style.setProperty('--nav-corner-radius', (theme.nav_corner_radius || 0) + 'px');
+                document.documentElement.style.setProperty('--nav-height', (theme.nav_height || 64) + 'px');
+            }
         }
-
+        
         async function applyThemeFromServer(themeId) {
             try {
                 const res = await fetch(`/api/themes/${themeId}`, { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     currentTheme = themeId;
-                    applyTheme(themeId);
+                    applyThemeFromObject(availableThemes[themeId]);
                     renderThemesGrid();
                 }
             } catch (e) {
                 console.error('Failed to apply theme:', e);
             }
         }
-
+        
         function renderThemesGrid() {
             const grid = document.getElementById('themesGrid');
             if (!grid) return;
@@ -690,8 +1033,8 @@
                 preview.style.background = `linear-gradient(135deg, ${theme.colors.accent}, ${theme.colors.main_bg})`;
                 
                 const name = document.createElement('div');
+                name.className = 'theme-name';
                 name.textContent = theme.name;
-                name.style.fontSize = '12px';
                 
                 card.appendChild(preview);
                 card.appendChild(name);
@@ -699,65 +1042,57 @@
                 grid.appendChild(card);
             }
         }
-
-        // ========== BOTS ==========
+        
+        // ========== БОТЫ ==========
         async function loadBots() {
             try {
                 const res = await fetch('/api/bots');
                 const botsList = await res.json();
                 renderBots(botsList);
-                if (botsList.length > 0 && !activeBotToken) {
-                    activeBotToken = botsList[0].token;
-                    await switchBot(activeBotToken);
-                }
             } catch (e) {
                 console.error('Failed to load bots:', e);
             }
         }
-
+        
         function renderBots(botsList) {
-            const container = document.getElementById('botsContainer');
+            const container = document.getElementById('botsList');
             if (!container) return;
             container.innerHTML = '';
             
             if (botsList.length === 0) {
-                container.innerHTML = '<div class="empty-state">🤖<br>Нет ботов</div>';
+                container.innerHTML = '<div class="empty-state"><div>🤖</div><div>Нет ботов</div><div style="font-size:13px; margin-top:8px">Нажмите ⚙️ чтобы добавить</div></div>';
                 return;
             }
             
+            const grid = document.createElement('div');
+            grid.className = 'bots-grid';
+            
             botsList.forEach(bot => {
-                const botDiv = document.createElement('div');
-                botDiv.className = 'bot-icon';
-                if (activeBotToken === bot.token) botDiv.classList.add('active');
-                botDiv.textContent = bot.username.charAt(0).toUpperCase();
-                if (bot.unread_total > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'unread-badge';
-                    badge.textContent = bot.unread_total > 9 ? '9+' : bot.unread_total;
-                    botDiv.appendChild(badge);
-                }
-                botDiv.onclick = () => switchBot(bot.token);
-                container.appendChild(botDiv);
+                const card = document.createElement('div');
+                card.className = 'bot-card';
+                card.innerHTML = `
+                    <div class="bot-avatar">${bot.username.charAt(0).toUpperCase()}</div>
+                    <div class="bot-info">
+                        <div class="bot-name">@${bot.username}</div>
+                        <div class="bot-status">${bot.chats_count} чатов</div>
+                    </div>
+                    ${bot.unread_total > 0 ? `<div class="bot-unread">${bot.unread_total}</div>` : ''}
+                `;
+                card.onclick = () => selectBot(bot.token, bot.username);
+                grid.appendChild(card);
             });
+            
+            container.appendChild(grid);
         }
-
-        async function switchBot(token) {
+        
+        async function selectBot(token, username) {
             activeBotToken = token;
+            currentBotName = '@' + username;
             await fetch('/api/bots/' + token + '/activate', { method: 'POST' });
-            
-            document.querySelectorAll('.bot-icon').forEach(icon => icon.classList.remove('active'));
-            document.querySelectorAll('.bot-icon').forEach(icon => {
-                if (icon.textContent.trim().toUpperCase() === botsData[token]?.username?.charAt(0).toUpperCase()) {
-                    icon.classList.add('active');
-                }
-            });
-            
-            currentChatId = null;
-            document.getElementById('chatHeader').textContent = 'Выберите чат';
-            document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Выберите чат</div></div>';
+            navigateTo('chats', currentBotName, true);
             await loadChats(token);
         }
-
+        
         async function loadChats(token) {
             try {
                 const res = await fetch(`/api/chats/${token}`);
@@ -767,50 +1102,43 @@
                 console.error('Failed to load chats:', e);
             }
         }
-
+        
         function renderChats(chats) {
             const container = document.getElementById('chatsList');
             if (!container) return;
             container.innerHTML = '';
             
             if (chats.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет чатов</div></div>';
+                container.innerHTML = '<div class="empty-state"><div>💬</div><div>Нет чатов</div><div style="font-size:13px; margin-top:8px">Напишите боту первым</div></div>';
                 return;
             }
             
             chats.forEach(chat => {
                 const chatDiv = document.createElement('div');
                 chatDiv.className = 'chat-item';
-                if (currentChatId === chat.id) chatDiv.classList.add('active');
-                
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'chat-name';
-                nameSpan.textContent = chat.name;
-                chatDiv.appendChild(nameSpan);
-                
-                if (chat.unread > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'chat-unread';
-                    badge.textContent = chat.unread;
-                    chatDiv.appendChild(badge);
-                }
-                
+                chatDiv.innerHTML = `
+                    <div class="chat-avatar">${(chat.name.charAt(0) || '?').toUpperCase()}</div>
+                    <div class="chat-info">
+                        <div class="chat-name">${escapeHtml(chat.name)}</div>
+                        <div class="chat-preview">${chat.last_message || 'Нет сообщений'}</div>
+                    </div>
+                    <div class="chat-meta">
+                        ${chat.time ? `<div class="chat-time">${chat.time}</div>` : ''}
+                        ${chat.unread > 0 ? `<div class="chat-unread-badge">${chat.unread}</div>` : ''}
+                    </div>
+                `;
                 chatDiv.onclick = () => selectChat(chat.id, chat.name);
                 container.appendChild(chatDiv);
             });
         }
-
+        
         async function selectChat(chatId, chatName) {
             currentChatId = chatId;
-            document.getElementById('chatHeader').textContent = chatName;
-            
+            navigateTo('chat', chatName, true);
             await fetch(`/api/chats/${activeBotToken}/${chatId}/mark_read`, { method: 'POST' });
             await loadMessages(chatId);
-            await loadChats(activeBotToken);
-            
-            if (isMobile) closeChatList();
         }
-
+        
         async function loadMessages(chatId) {
             try {
                 const res = await fetch(`/api/messages/${activeBotToken}/${chatId}`);
@@ -820,23 +1148,23 @@
                 console.error('Failed to load messages:', e);
             }
         }
-
+        
         function renderMessages(messages) {
-            const container = document.getElementById('messagesArea');
+            const container = document.getElementById('messagesContainer');
             if (!container) return;
             container.innerHTML = '';
             
             if (messages.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>Нет сообщений</div></div>';
+                container.innerHTML = '<div class="empty-state"><div>💬</div><div>Нет сообщений</div></div>';
                 return;
             }
             
             messages.forEach(msg => addMessageToChat(msg));
             scrollToBottom();
         }
-
+        
         function addMessageToChat(msg) {
-            const container = document.getElementById('messagesArea');
+            const container = document.getElementById('messagesContainer');
             if (!container) return;
             
             if (container.querySelector('.empty-state')) container.innerHTML = '';
@@ -844,12 +1172,10 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${msg.is_my ? 'message-own' : 'message-other'}`;
             
-            if (!msg.is_my && msg.sender) {
-                const senderSpan = document.createElement('div');
-                senderSpan.className = 'message-sender';
-                senderSpan.textContent = msg.sender;
-                messageDiv.appendChild(senderSpan);
-            }
+            const senderSpan = document.createElement('div');
+            senderSpan.className = 'message-sender';
+            senderSpan.textContent = msg.is_my ? 'Вы' : (msg.sender || 'Пользователь');
+            messageDiv.appendChild(senderSpan);
             
             const bubble = document.createElement('div');
             bubble.className = `bubble ${msg.is_my ? 'bubble-own' : 'bubble-other'}`;
@@ -865,7 +1191,7 @@
             container.appendChild(messageDiv);
             scrollToBottom();
         }
-
+        
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
@@ -883,15 +1209,13 @@
                 if (data.success) {
                     addMessageToChat(data.message);
                     input.value = '';
-                } else {
-                    alert('Ошибка: ' + data.error);
+                    scrollToBottom();
                 }
             } catch (e) {
                 console.error('Failed to send message:', e);
-                alert('Ошибка при отправке');
             }
         }
-
+        
         async function sendFile(file) {
             if (!file || !activeBotToken || !currentChatId) return;
             
@@ -913,65 +1237,43 @@
                     const data = await res.json();
                     if (data.success) {
                         addMessageToChat(data.message);
-                    } else {
-                        alert('Ошибка: ' + data.error);
+                        scrollToBottom();
                     }
                 } catch (e) {
                     console.error('Failed to send file:', e);
-                    alert('Ошибка при отправке файла');
                 }
             };
             reader.readAsDataURL(file);
         }
-
-        function handleFileDrop(e) {
-            e.preventDefault();
-            const files = e.dataTransfer.files;
-            if (files.length > 0) sendFile(files[0]);
-            e.target.classList.remove('drag-over');
-        }
-
+        
         function handleKeyPress(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
                 sendMessage();
             }
         }
-
+        
         function scrollToBottom() {
             setTimeout(() => {
-                const container = document.getElementById('messagesArea');
-                if (container) container.scrollTop = container.scrollHeight;
+                const container = document.getElementById('messagesContainer');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
             }, 100);
         }
-
-        // ========== MODALS ==========
-        function openSettings() {
-            loadBotsList();
-            document.getElementById('settingsModal').classList.add('active');
+        
+        function showAddBotDialog() {
+            document.getElementById('addBotDialog').classList.add('active');
         }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.remove('active');
+        
+        function closeAddBotDialog() {
+            document.getElementById('addBotDialog').classList.remove('active');
+            document.getElementById('newBotToken').value = '';
         }
-
-        function openAddBotModal() {
-            closeSettings();
-            document.getElementById('addBotModal').classList.add('active');
-        }
-
-        function closeAddBotModal() {
-            document.getElementById('addBotModal').classList.remove('active');
-            document.getElementById('botToken').value = '';
-        }
-
+        
         async function addBot() {
-            const token = document.getElementById('botToken').value.trim();
+            const token = document.getElementById('newBotToken').value.trim();
             if (!token) return;
-            
-            const addBtn = event.target;
-            addBtn.disabled = true;
-            addBtn.textContent = 'Добавление...';
             
             try {
                 const res = await fetch('/api/bots', {
@@ -982,35 +1284,32 @@
                 
                 const data = await res.json();
                 if (data.success) {
-                    closeAddBotModal();
+                    closeAddBotDialog();
                     await loadBots();
-                    alert(`Бот @${data.username} успешно добавлен!`);
+                    alert(`Бот @${data.username} добавлен!`);
                 } else {
                     alert('Ошибка: ' + data.error);
                 }
             } catch (e) {
                 console.error('Failed to add bot:', e);
                 alert('Ошибка при добавлении бота');
-            } finally {
-                addBtn.disabled = false;
-                addBtn.textContent = 'Добавить';
             }
         }
-
-        async function loadBotsList() {
+        
+        async function loadBotsManageList() {
             try {
                 const res = await fetch('/api/bots');
                 const botsList = await res.json();
-                const container = document.getElementById('botsListSettings');
+                const container = document.getElementById('botsManageList');
                 if (!container) return;
                 
                 if (botsList.length === 0) {
-                    container.innerHTML = '<div class="empty-state">Нет добавленных ботов</div>';
+                    container.innerHTML = '<div class="empty-state">Нет ботов</div>';
                 } else {
                     container.innerHTML = botsList.map(bot => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bubble-other); border-radius: 10px; margin-bottom: 10px;">
-                            <div>🤖 ${bot.username}</div>
-                            <button class="modal-btn modal-btn-secondary" onclick="removeBot('${bot.token}')">Удалить</button>
+                        <div class="bot-manage-item">
+                            <div>🤖 @${bot.username}</div>
+                            <button class="remove-bot-btn" onclick="removeBot('${bot.token}')">Удалить</button>
                         </div>
                     `).join('');
                 }
@@ -1018,96 +1317,64 @@
                 console.error('Failed to load bots list:', e);
             }
         }
-
+        
         async function removeBot(token) {
             if (confirm('Удалить этого бота?')) {
                 await fetch(`/api/bots/${token}`, { method: 'DELETE' });
                 if (activeBotToken === token) {
                     activeBotToken = null;
-                    currentChatId = null;
-                    document.getElementById('chatHeader').textContent = 'Выберите чат';
-                    document.getElementById('messagesArea').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📱</div><div>Выберите чат для начала общения</div></div>';
+                    navigateTo('bots', 'Telegram Bot', false);
                 }
                 await loadBots();
-                await loadBotsList();
+                await loadBotsManageList();
             }
         }
-
-        // ========== MOBILE ==========
-        function openChatList() {
-            document.getElementById('chatListSidebar').classList.add('open');
-            document.getElementById('chatListOverlay').classList.add('active');
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
-        function closeChatList() {
-            document.getElementById('chatListSidebar').classList.remove('open');
-            document.getElementById('chatListOverlay').classList.remove('active');
-        }
-
-        // ========== WEBSOCKET ==========
         function setupWebSocket() {
             socket.on('connect', () => console.log('WebSocket connected'));
             socket.on('new_message', (data) => {
                 if (activeBotToken === data.token && currentChatId === data.chat_id) {
                     addMessageToChat(data.message);
+                } else if (activeBotToken === data.token) {
+                    loadChats(activeBotToken);
                 } else {
                     loadBots();
-                    if (activeBotToken === data.token) loadChats(activeBotToken);
                 }
             });
         }
-
-        // ========== INIT ==========
-        async function loadActiveBot() {
-            try {
-                const res = await fetch('/api/bots/active');
-                const data = await res.json();
-                if (data.token) activeBotToken = data.token;
-            } catch (e) {
-                console.error('Failed to load active bot:', e);
+        
+        // Свайп для возврата
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            if (touchEndX - touchStartX > 80 && currentScreen !== 'bots') {
+                handleBack();
             }
-        }
-
-        function checkOnlineStatus() {
-            const statusDiv = document.getElementById('online-status');
-            const isOnline = navigator.onLine;
-            statusDiv.textContent = isOnline ? '🟢 Онлайн' : '🔴 Офлайн';
-            statusDiv.className = isOnline ? 'online' : 'offline';
-        }
-
+        });
+        
         async function init() {
-            await loadActiveBot();
             await loadThemes();
             await loadBots();
             setupWebSocket();
-            checkOnlineStatus();
+            navigateTo('bots', 'Telegram Bot', false);
             
-            if (isMobile) {
-                const header = document.querySelector('.chat-header');
-                if (header) header.onclick = () => openChatList();
-            }
+            const setHeight = () => {
+                document.body.style.height = window.innerHeight + 'px';
+            };
+            setHeight();
+            window.addEventListener('resize', setHeight);
         }
-
-        window.addEventListener('online', checkOnlineStatus);
-        window.addEventListener('offline', checkOnlineStatus);
         
-        const messagesArea = document.getElementById('messagesArea');
-        if (messagesArea) {
-            messagesArea.ondragenter = (e) => { e.preventDefault(); messagesArea.classList.add('drag-over'); };
-            messagesArea.ondragleave = (e) => { messagesArea.classList.remove('drag-over'); };
-            messagesArea.ondragover = (e) => e.preventDefault();
-            messagesArea.ondrop = handleFileDrop;
-        }
-
-        // Сохраняем данные ботов для иконок
-        let botsData = {};
-        setInterval(async () => {
-            try {
-                const res = await fetch('/api/bots');
-                botsData = await res.json();
-            } catch(e) {}
-        }, 5000);
-
         init();
     </script>
 </body>
