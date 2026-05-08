@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="TG Bot">
     <meta name="theme-color" content="#007aff">
+    <link rel="manifest" href="/static/manifest.json">
     
-    <title>Telegram Multi-Bot</title>
+    <title>TG Multi-Bot</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
     <style>
@@ -16,1366 +16,1289 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        :root {
-            --main-bg: #1e1e1e;
-            --surface: #2c2c2e;
-            --surface-light: #3a3a3c;
-            --accent: #007aff;
-            --accent-dark: #0051d5;
-            --text: #ffffff;
-            --text-secondary: #8e8e93;
-            --text-tertiary: #636366;
-            --bubble-own: #007aff;
-            --bubble-other: #2c2c2e;
-            --border: #3a3a3a;
-            --border-light: #4a4a4c;
-            --success: #34c759;
-            --error: #ff3b30;
-            --warning: #ff9500;
-            --bubble-radius-own: 20px;
-            --bubble-radius-other: 20px;
-            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-            
-            --nav-bg: rgba(30, 30, 30, 0.85);
-            --nav-blur: 25px;
-            --nav-border: 0.5px solid rgba(255, 255, 255, 0.1);
-            --nav-height: 64px;
-            --nav-corner-radius: 0px;
         }
 
         body {
-            font-family: var(--font-family);
-            background: var(--main-bg);
-            color: var(--text);
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #fff;
             height: 100vh;
-            height: -webkit-fill-available;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* Главный контейнер */
-        .app {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* Плавающий навбар сверху */
-        .floating-nav {
+        /* Экран авторизации */
+        .auth-screen {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1001;
-            background: var(--nav-bg);
-            backdrop-filter: blur(var(--nav-blur)) saturate(180%);
-            -webkit-backdrop-filter: blur(var(--nav-blur)) saturate(180%);
-            border-bottom: var(--nav-border);
-            border-radius: var(--nav-corner-radius);
-            padding-top: var(--safe-top);
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .nav-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            gap: 12px;
-            min-height: var(--nav-height);
-        }
-
-        .nav-title {
-            font-size: 17px;
-            font-weight: 600;
-            color: var(--text);
-            text-align: center;
-            flex: 1;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            cursor: pointer;
-            font-size: 20px;
+            bottom: 0;
+            background: linear-gradient(135deg, #1e1e1e, #2c2c2e);
+            z-index: 10000;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            color: var(--text);
-            flex-shrink: 0;
+            padding: 20px;
         }
 
-        .nav-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
+        .auth-card {
+            background: rgba(44, 44, 46, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
         }
 
-        .nav-btn.hidden {
+        .auth-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-bottom: 32px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #3a3a3c;
+            border-radius: 12px;
+            background: #1c1c1e;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 16px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .auth-input:focus {
+            border-color: #007aff;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #007aff;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .auth-btn:active {
+            background: #0056b3;
+            transform: scale(0.98);
+        }
+
+        .auth-link {
+            color: #007aff;
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .error-message {
+            color: #ff3b30;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Основной контейнер */
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Навигация */
+        .navbar {
+            background: #2c2c2e;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #3a3a3c;
+            min-height: 56px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-back {
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-back.hidden {
             visibility: hidden;
             pointer-events: none;
         }
 
-        /* Контентные экраны */
-        .screen {
-            flex: 1;
-            overflow-y: auto;
-            padding-top: calc(var(--nav-height) + var(--safe-top));
-            padding-bottom: 20px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .screen-content {
-            padding: 0 16px;
-        }
-
-        /* Скрытие экранов */
-        .screen.hidden {
-            display: none;
-        }
-
-        /* Карточки ботов */
-        .bots-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .bot-card {
-            background: var(--surface);
-            border-radius: 16px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .bot-card:active {
-            transform: scale(0.98);
-            background: var(--surface-light);
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .bot-avatar {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .bot-info {
-            flex: 1;
-        }
-
-        .bot-name {
-            font-size: 17px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .bot-status {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .bot-unread {
-            background: var(--accent);
-            border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        /* Элементы чатов */
-        .chat-item {
-            padding: 14px 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border-bottom: 0.5px solid var(--border);
-            animation: fadeInUp 0.3s ease;
-        }
-
-        .chat-item:active {
-            background: var(--surface);
-            margin: 0 -16px;
-            padding: 14px 16px;
-            border-radius: 12px;
-        }
-
-        .chat-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .nav-title {
             font-size: 18px;
             font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .chat-info {
             flex: 1;
-            min-width: 0;
-        }
-
-        .chat-name {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .chat-preview {
-            font-size: 13px;
-            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .chat-meta {
-            text-align: right;
-            flex-shrink: 0;
+        .nav-action {
+            background: none;
+            border: none;
+            color: #007aff;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 8px 12px;
+            font-weight: 500;
         }
 
-        .chat-time {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
+        .nav-action.hidden {
+            display: none;
         }
 
-        .chat-unread-badge {
-            background: var(--accent);
-            border-radius: 20px;
-            padding: 2px 8px;
-            font-size: 12px;
+        /* Контент */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Списки */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e93;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
             font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
         }
 
-        /* Сообщения - свои справа, чужие слева */
-        .messages-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-bottom: 80px;
-        }
-
-        .message {
-            display: flex;
-            flex-direction: column;
-            max-width: 80%;
-            animation: fadeInUp 0.2s ease;
-        }
-
-        .message-own {
-            align-self: flex-end;
-        }
-
-        .message-other {
-            align-self: flex-start;
-        }
-
-        .message-sender {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: var(--text-secondary);
-        }
-
-        .message-own .message-sender {
-            text-align: right;
-            padding-right: 12px;
-        }
-
-        .message-other .message-sender {
-            text-align: left;
-            padding-left: 12px;
-        }
-
-        .bubble {
-            padding: 10px 16px;
-            word-wrap: break-word;
-            font-size: 15px;
+        .empty-state-text {
+            font-size: 14px;
+            margin-bottom: 24px;
             line-height: 1.4;
         }
 
-        .bubble-own {
-            background: var(--bubble-own);
+        .add-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #007aff;
             color: white;
-            border-radius: var(--bubble-radius-own);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .list-item {
+            background: #2c2c2e;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .list-item:active {
+            background: #3a3a3c;
+        }
+
+        .list-item-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: #007aff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .list-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .list-item-subtitle {
+            font-size: 13px;
+            color: #8e8e93;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge {
+            background: #ff3b30;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        /* Чат */
+        .messages-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+            margin-bottom: 2px;
+        }
+
+        .message-wrapper.sent {
+            align-self: flex-end;
+        }
+
+        .message-wrapper.received {
+            align-self: flex-start;
+        }
+
+        .message-bubble {
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            display: inline-block;
+        }
+
+        .message-wrapper.sent .message-bubble {
+            background: #007aff;
+            color: white;
             border-bottom-right-radius: 4px;
         }
 
-        .bubble-other {
-            background: var(--bubble-other);
-            color: var(--text);
-            border-radius: var(--bubble-radius-other);
+        .message-wrapper.received .message-bubble {
+            background: #2c2c2e;
+            color: white;
             border-bottom-left-radius: 4px;
         }
 
-        .message-time {
-            font-size: 10px;
-            margin-top: 4px;
-            color: var(--text-secondary);
-        }
-
-        .message-own .message-time {
-            text-align: right;
-            padding-right: 12px;
-        }
-
-        .message-other .message-time {
-            text-align: left;
-            padding-left: 12px;
-        }
-
-        /* Поле ввода в стиле iOS */
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 12px 16px;
-            padding-bottom: calc(12px + var(--safe-bottom));
-            background: var(--main-bg);
-            border-top: 0.5px solid var(--border);
-            z-index: 100;
-        }
-
-        .input-wrapper {
+        .message-meta {
+            font-size: 11px;
+            color: #8e8e93;
+            margin-top: 2px;
+            padding: 0 4px;
             display: flex;
-            gap: 10px;
-            align-items: center;
-            background: var(--surface);
-            border-radius: 30px;
-            padding: 4px 4px 4px 16px;
+            gap: 4px;
+        }
+
+        .message-wrapper.sent .message-meta {
+            justify-content: flex-end;
+        }
+
+        .message-input-area {
+            background: #2c2c2e;
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #3a3a3c;
         }
 
         .message-input {
             flex: 1;
-            padding: 10px 0;
-            border: none;
-            background: transparent;
-            color: var(--text);
-            font-size: 16px;
-            outline: none;
-        }
-
-        .attach-btn, .send-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: var(--accent);
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
+            background: #1c1c1e;
+            border: 1px solid #3a3a3c;
+            border-radius: 20px;
+            padding: 10px 16px;
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
+            font-size: 15px;
+            outline: none;
+            -webkit-appearance: none;
         }
 
-        .attach-btn {
-            background: transparent;
-            color: var(--text-secondary);
+        .message-input:focus {
+            border-color: #007aff;
         }
 
-        /* Полноэкранное окно настроек */
-        .fullscreen-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--main-bg);
-            z-index: 200;
-            display: none;
-            flex-direction: column;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .fullscreen-modal.active {
-            display: flex;
-            transform: translateX(0);
-        }
-
-        .modal-content-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 16px;
-            padding-bottom: calc(20px + var(--safe-bottom));
-        }
-
-        .modal-header {
-            font-size: 20px;
+        .send-button {
+            background: #007aff;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            color: white;
             font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .theme-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .theme-card {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .theme-card.active {
-            border: 2px solid var(--accent);
+        .send-button:active {
+            background: #0056b3;
+            transform: scale(0.95);
         }
 
-        .theme-preview {
-            width: 100%;
-            height: 50px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .theme-name {
-            font-size: 11px;
-        }
-
+        /* Настройки */
         .settings-section {
-            margin-bottom: 28px;
+            margin: 16px;
         }
 
         .settings-section-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--accent);
-        }
-
-        .setting-row {
-            margin-bottom: 16px;
-        }
-
-        .setting-label {
-            font-size: 14px;
+            font-size: 12px;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
-            display: block;
-            color: var(--text-secondary);
         }
 
-        .color-input {
-            width: 100%;
-            height: 44px;
-            border: 1px solid var(--border);
+        .settings-item {
+            background: #2c2c2e;
+            padding: 14px 16px;
             border-radius: 12px;
-            background: var(--surface);
             cursor: pointer;
-        }
-
-        .slider-input {
-            width: 100%;
-            height: 4px;
-            -webkit-appearance: none;
-            background: var(--border);
-            border-radius: 2px;
-            outline: none;
-        }
-
-        .slider-input::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-        }
-
-        .add-bot-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-        }
-
-        .add-bot-btn:active {
-            transform: scale(0.98);
-        }
-
-        .bot-manage-item {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
         }
 
-        .remove-bot-btn {
-            background: var(--error);
-            color: white;
+        .toggle-switch {
+            width: 51px;
+            height: 31px;
+            background: #3a3a3c;
+            border-radius: 31px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.on {
+            background: #34c759;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 27px;
+            height: 27px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.on::after {
+            transform: translateX(20px);
+        }
+
+        .logout-btn {
+            margin: 16px;
+            width: calc(100% - 32px);
+            padding: 14px;
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            border-radius: 12px;
+            background: #ff3b30;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-secondary);
+        .logout-btn:active {
+            background: #cc0000;
+            transform: scale(0.98);
         }
 
-        .spinner {
-            border: 3px solid var(--border);
-            border-top: 3px solid var(--accent);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .hidden {
+            display: none !important;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        ::-webkit-scrollbar {
-            width: 4px;
+        .modal {
+            background: #2c2c2e;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
         }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #3a3a3c;
+            border-radius: 10px;
+            background: #1c1c1e;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 12px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .modal-input:focus {
+            border-color: #007aff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn.primary {
+            background: #007aff;
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #3a3a3c;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="app">
-        <!-- Плавающий навбар сверху -->
-        <div class="floating-nav" id="floatingNav">
-            <div class="nav-content">
-                <button class="nav-btn" id="navBackBtn" onclick="handleBack()">←</button>
-                <div class="nav-title" id="navTitle">Telegram Bot</div>
-                <button class="nav-btn" id="navSettingsBtn" onclick="openSettings()">⚙️</button>
+    <!-- Экран авторизации -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-card">
+            <div class="auth-title">📱 TG Bot</div>
+            <div class="auth-subtitle">Мульти-бот менеджер</div>
+            
+            <div id="loginForm">
+                <div class="error-message" id="loginError"></div>
+                <input type="text" id="loginUsername" class="auth-input" placeholder="Имя пользователя" autocomplete="username">
+                <input type="password" id="loginPassword" class="auth-input" placeholder="Пароль" autocomplete="current-password">
+                <button class="auth-btn" onclick="handleLogin()">Войти</button>
+                <button class="auth-link" onclick="showRegisterForm()">Создать аккаунт</button>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <div class="error-message" id="registerError"></div>
+                <input type="text" id="regUsername" class="auth-input" placeholder="Имя пользователя">
+                <input type="password" id="regPassword" class="auth-input" placeholder="Пароль">
+                <input type="password" id="regConfirmPassword" class="auth-input" placeholder="Подтвердите пароль">
+                <button class="auth-btn" onclick="handleRegister()">Зарегистрироваться</button>
+                <button class="auth-link" onclick="showLoginForm()">Уже есть аккаунт? Войти</button>
             </div>
         </div>
+    </div>
 
-        <!-- Экран выбора бота -->
-        <div class="screen" id="botsScreen">
-            <div class="screen-content" id="botsList"></div>
+    <!-- Основное приложение -->
+    <div class="app-container hidden" id="appContainer">
+        <!-- Навбар -->
+        <div class="navbar">
+            <button class="nav-back hidden" id="navBack" onclick="goBack()">←</button>
+            <span class="nav-title" id="navTitle">Мои боты</span>
+            <button class="nav-action" id="navAction" onclick="handleNavAction()">⚙️</button>
         </div>
 
-        <!-- Экран списка чатов -->
-        <div class="screen hidden" id="chatsScreen">
-            <div class="screen-content" id="chatsList"></div>
-        </div>
-
-        <!-- Экран чата -->
-        <div class="screen hidden" id="chatScreen">
-            <div class="screen-content" id="messagesContainer"></div>
-        </div>
-
-        <!-- Поле ввода (только для чата) -->
-        <div class="input-container" id="inputContainer" style="display: none;">
-            <div class="input-wrapper">
-                <button class="attach-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-                <input type="file" id="fileInput" style="display: none" onchange="sendFile(this.files[0])">
-                <input type="text" class="message-input" id="messageInput" placeholder="Сообщение..." onkeypress="handleKeyPress(event)">
-                <button class="send-btn" onclick="sendMessage()">➤</button>
-            </div>
-        </div>
-
-        <!-- Полноэкранное окно настроек -->
-        <div class="fullscreen-modal" id="settingsModal">
-            <div class="modal-content-scroll">
-                <div class="modal-header">🎨 Настройки тем</div>
-                
-                <div class="settings-section">
-                    <div class="settings-section-title">Готовые темы</div>
-                    <div class="theme-grid" id="themesGrid"></div>
-                </div>
-
-                <div class="settings-section">
-                    <div class="settings-section-title">🎨 Цвета интерфейса</div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">🌙 Основной фон</div>
-                        <input type="color" id="mainBgColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">🎯 Акцентный цвет</div>
-                        <input type="color" id="accentColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">💬 Цвет моих сообщений</div>
-                        <input type="color" id="bubbleOwnColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">👤 Цвет сообщений собеседника</div>
-                        <input type="color" id="bubbleOtherColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">📝 Цвет текста</div>
-                        <input type="color" id="textColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">🔘 Цвет фона элементов</div>
-                        <input type="color" id="surfaceColor" class="color-input">
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">📏 Цвет границ</div>
-                        <input type="color" id="borderColor" class="color-input">
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <div class="settings-section-title">📐 Скругления</div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">💬 Скругление моих сообщений</div>
-                        <input type="range" id="bubbleRadiusOwn" min="4" max="40" class="slider-input">
-                        <span id="radiusOwnValue" style="font-size: 12px; margin-left: 8px;">20px</span>
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">👤 Скругление сообщений других</div>
-                        <input type="range" id="bubbleRadiusOther" min="4" max="40" class="slider-input">
-                        <span id="radiusOtherValue" style="font-size: 12px; margin-left: 8px;">20px</span>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <div class="settings-section-title">✨ Настройка навбара</div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">🎨 Прозрачность навбара (0-100%)</div>
-                        <input type="range" id="navOpacity" min="0" max="100" class="slider-input">
-                        <span id="navOpacityValue" style="font-size: 12px; margin-left: 8px;">85%</span>
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">🔮 Интенсивность размытия (1-40px)</div>
-                        <input type="range" id="navBlur" min="1" max="40" class="slider-input">
-                        <span id="navBlurValue" style="font-size: 12px; margin-left: 8px;">25px</span>
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">📐 Скругление углов навбара (0-30px)</div>
-                        <input type="range" id="navCornerRadius" min="0" max="30" class="slider-input">
-                        <span id="navCornerRadiusValue" style="font-size: 12px; margin-left: 8px;">0px</span>
-                    </div>
-                    
-                    <div class="setting-row">
-                        <div class="setting-label">📏 Высота навбара (50-80px)</div>
-                        <input type="range" id="navHeight" min="50" max="80" class="slider-input">
-                        <span id="navHeightValue" style="font-size: 12px; margin-left: 8px;">64px</span>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <button class="add-bot-btn" onclick="applyCustomTheme()" style="background: var(--accent);">✨ Применить тему</button>
-                    <button class="add-bot-btn" onclick="saveCustomTheme()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">💾 Сохранить тему</button>
-                </div>
-
-                <div class="settings-section">
-                    <div class="settings-section-title">🤖 Управление ботами</div>
-                    <button class="add-bot-btn" onclick="showAddBotDialog()">➕ Добавить бота</button>
-                    <div id="botsManageList"></div>
+        <!-- Контент -->
+        <div class="content" id="content">
+            <!-- Список ботов -->
+            <div id="botsView"></div>
+            
+            <!-- Список чатов -->
+            <div id="chatsView" class="hidden"></div>
+            
+            <!-- Чат -->
+            <div id="messagesView" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
+                <div class="messages-area" id="messagesArea"></div>
+                <div class="message-input-area">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Сообщение..." onkeypress="handleKeyPress(event)">
+                    <button class="send-button" onclick="sendMessage()">Отправить</button>
                 </div>
             </div>
+            
+            <!-- Настройки -->
+            <div id="settingsView" class="hidden"></div>
         </div>
+    </div>
 
-        <!-- Диалог добавления бота -->
-        <div class="fullscreen-modal" id="addBotDialog">
-            <div class="modal-content-scroll">
-                <div class="modal-header">➕ Добавить бота</div>
-                <input type="text" id="newBotToken" placeholder="Введите токен бота" style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); margin-bottom: 16px; font-size: 14px;">
-                <button class="add-bot-btn" onclick="addBot()">Добавить</button>
-                <button class="add-bot-btn" onclick="closeAddBotDialog()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">Отмена</button>
+    <!-- Модальное окно -->
+    <div class="modal-overlay hidden" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle"></div>
+            <div id="modalContent"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal()">Отмена</button>
+                <button class="modal-btn primary" id="modalConfirm" onclick="confirmModal()">OK</button>
             </div>
         </div>
     </div>
 
     <script>
-        let socket = io();
-        let activeBotToken = null;
-        let currentChatId = null;
-        let currentTheme = null;
-        let availableThemes = {};
-        let currentScreen = 'bots';
-        let currentBotName = '';
+        // Глобальные переменные
+        let authToken = localStorage.getItem('authToken');
+        let currentView = 'bots';
+        let activeBot = null;
+        let activeChat = null;
+        let socket = null;
+        let modalCallback = null;
 
-        // ========== НАВИГАЦИЯ ==========
-        function navigateTo(screen, title, showBack = true) {
-            document.getElementById('botsScreen').classList.add('hidden');
-            document.getElementById('chatsScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.add('hidden');
-            
-            document.getElementById(`${screen}Screen`).classList.remove('hidden');
-            
-            const navTitle = document.getElementById('navTitle');
-            const backBtn = document.getElementById('navBackBtn');
-            const settingsBtn = document.getElementById('navSettingsBtn');
-            
-            navTitle.style.opacity = '0';
-            setTimeout(() => {
-                navTitle.textContent = title;
-                navTitle.style.opacity = '1';
-            }, 150);
-            
-            if (screen === 'bots') {
-                backBtn.classList.add('hidden');
-                settingsBtn.classList.remove('hidden');
-            } else {
-                if (showBack) {
-                    backBtn.classList.remove('hidden');
+        // Настройки по умолчанию
+        let settings = {
+            sound: true,
+            notifications: true
+        };
+
+        // Загружаем настройки
+        const savedSettings = localStorage.getItem('userSettings');
+        if (savedSettings) {
+            try {
+                settings = JSON.parse(savedSettings);
+            } catch(e) {}
+        }
+
+        // Проверяем авторизацию при загрузке
+        if (authToken) {
+            checkAuth();
+        }
+
+        // Проверка авторизации
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/check_auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                });
+                const data = await res.json();
+                
+                if (data.authenticated) {
+                    showApp();
+                    initSocket();
+                    navigateTo('bots');
                 } else {
-                    backBtn.classList.add('hidden');
+                    localStorage.removeItem('authToken');
+                    authToken = null;
                 }
-                settingsBtn.classList.remove('hidden');
-            }
-            
-            const inputContainer = document.getElementById('inputContainer');
-            if (screen === 'chat') {
-                inputContainer.style.display = 'block';
-                setTimeout(() => scrollToBottom(), 100);
-            } else {
-                inputContainer.style.display = 'none';
-            }
-            
-            currentScreen = screen;
-        }
-        
-        function handleBack() {
-            if (currentScreen === 'chat') {
-                navigateTo('chats', currentBotName || 'Чаты', true);
-                if (activeBotToken) loadChats(activeBotToken);
-            } else if (currentScreen === 'chats') {
-                navigateTo('bots', 'Telegram Bot', false);
-                loadBots();
+            } catch (e) {
+                console.error('Auth check failed:', e);
             }
         }
-        
-        function openSettings() {
-            const modal = document.getElementById('settingsModal');
-            modal.classList.add('active');
-            loadBotsManageList();
-            loadCurrentColorsToSettings();
+
+        // Показать приложение
+        function showApp() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
         }
-        
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.remove('active');
+
+        // Показать форму регистрации
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('loginError').classList.remove('show');
         }
-        
-        function loadCurrentColorsToSettings() {
-            document.getElementById('mainBgColor').value = getComputedStyle(document.documentElement).getPropertyValue('--main-bg').trim() || '#1e1e1e';
-            document.getElementById('accentColor').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#007aff';
-            document.getElementById('bubbleOwnColor').value = getComputedStyle(document.documentElement).getPropertyValue('--bubble-own').trim() || '#007aff';
-            document.getElementById('bubbleOtherColor').value = getComputedStyle(document.documentElement).getPropertyValue('--bubble-other').trim() || '#2c2c2e';
-            document.getElementById('textColor').value = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#ffffff';
-            document.getElementById('surfaceColor').value = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#2c2c2e';
-            document.getElementById('borderColor').value = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#3a3a3a';
+
+        // Показать форму входа
+        function showLoginForm() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerError').classList.remove('show');
+        }
+
+        // Вход
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
             
-            const ownRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bubble-radius-own')) || 20;
-            const otherRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bubble-radius-other')) || 20;
-            
-            document.getElementById('bubbleRadiusOwn').value = ownRadius;
-            document.getElementById('bubbleRadiusOther').value = otherRadius;
-            document.getElementById('radiusOwnValue').textContent = ownRadius + 'px';
-            document.getElementById('radiusOtherValue').textContent = otherRadius + 'px';
-            
-            // Настройки навбара
-            const navBg = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg').trim();
-            const opacityMatch = navBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
-            if (opacityMatch) {
-                const opacity = Math.round(parseFloat(opacityMatch[4]) * 100);
-                document.getElementById('navOpacity').value = opacity;
-                document.getElementById('navOpacityValue').textContent = opacity + '%';
-            } else {
-                document.getElementById('navOpacity').value = 85;
-                document.getElementById('navOpacityValue').textContent = '85%';
+            if (!username || !password) {
+                errorEl.textContent = 'Заполните все поля';
+                errorEl.classList.add('show');
+                return;
             }
-            
-            const blur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-blur')) || 25;
-            document.getElementById('navBlur').value = blur;
-            document.getElementById('navBlurValue').textContent = blur + 'px';
-            
-            const cornerRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-corner-radius')) || 0;
-            document.getElementById('navCornerRadius').value = cornerRadius;
-            document.getElementById('navCornerRadiusValue').textContent = cornerRadius + 'px';
-            
-            const height = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
-            document.getElementById('navHeight').value = height;
-            document.getElementById('navHeightValue').textContent = height + 'px';
-            
-            document.getElementById('bubbleRadiusOwn').oninput = (e) => {
-                document.getElementById('radiusOwnValue').textContent = e.target.value + 'px';
-            };
-            document.getElementById('bubbleRadiusOther').oninput = (e) => {
-                document.getElementById('radiusOtherValue').textContent = e.target.value + 'px';
-            };
-            
-            document.getElementById('navOpacity').oninput = (e) => {
-                document.getElementById('navOpacityValue').textContent = e.target.value + '%';
-            };
-            document.getElementById('navBlur').oninput = (e) => {
-                document.getElementById('navBlurValue').textContent = e.target.value + 'px';
-            };
-            document.getElementById('navCornerRadius').oninput = (e) => {
-                document.getElementById('navCornerRadiusValue').textContent = e.target.value + 'px';
-            };
-            document.getElementById('navHeight').oninput = (e) => {
-                document.getElementById('navHeightValue').textContent = e.target.value + 'px';
-            };
-        }
-        
-        function applyCustomTheme() {
-            const ownRadius = parseInt(document.getElementById('bubbleRadiusOwn').value);
-            const otherRadius = parseInt(document.getElementById('bubbleRadiusOther').value);
-            const navOpacity = parseInt(document.getElementById('navOpacity').value);
-            const navBlur = parseInt(document.getElementById('navBlur').value);
-            const navCornerRadius = parseInt(document.getElementById('navCornerRadius').value);
-            const navHeight = parseInt(document.getElementById('navHeight').value);
-            
-            const mainBg = document.getElementById('mainBgColor').value;
-            const r = parseInt(mainBg.slice(1,3), 16);
-            const g = parseInt(mainBg.slice(3,5), 16);
-            const b = parseInt(mainBg.slice(5,7), 16);
-            const navBg = `rgba(${r}, ${g}, ${b}, ${navOpacity / 100})`;
-            
-            document.documentElement.style.setProperty('--main-bg', mainBg);
-            document.documentElement.style.setProperty('--accent', document.getElementById('accentColor').value);
-            document.documentElement.style.setProperty('--bubble-own', document.getElementById('bubbleOwnColor').value);
-            document.documentElement.style.setProperty('--bubble-other', document.getElementById('bubbleOtherColor').value);
-            document.documentElement.style.setProperty('--text', document.getElementById('textColor').value);
-            document.documentElement.style.setProperty('--surface', document.getElementById('surfaceColor').value);
-            document.documentElement.style.setProperty('--border', document.getElementById('borderColor').value);
-            document.documentElement.style.setProperty('--bubble-radius-own', ownRadius + 'px');
-            document.documentElement.style.setProperty('--bubble-radius-other', otherRadius + 'px');
-            document.documentElement.style.setProperty('--nav-bg', navBg);
-            document.documentElement.style.setProperty('--nav-blur', navBlur + 'px');
-            document.documentElement.style.setProperty('--nav-corner-radius', navCornerRadius + 'px');
-            document.documentElement.style.setProperty('--nav-height', navHeight + 'px');
-            
-            document.querySelector('.floating-nav').style.height = navHeight + 'px';
-            
-            document.getElementById('radiusOwnValue').textContent = ownRadius + 'px';
-            document.getElementById('radiusOtherValue').textContent = otherRadius + 'px';
-        }
-        
-        async function saveCustomTheme() {
-            const themeName = prompt('Введите название темы:');
-            if (!themeName) return;
-            
-            const themeId = 'custom_' + Date.now();
-            const customTheme = {
-                id: themeId,
-                name: themeName,
-                config: {
-                    name: themeName,
-                    colors: {
-                        main_bg: document.getElementById('mainBgColor').value,
-                        accent: document.getElementById('accentColor').value,
-                        bubble_own: document.getElementById('bubbleOwnColor').value,
-                        bubble_other: document.getElementById('bubbleOtherColor').value,
-                        text: document.getElementById('textColor').value,
-                        text_secondary: '#8e8e93',
-                        surface: document.getElementById('surfaceColor').value,
-                        border: document.getElementById('borderColor').value
-                    },
-                    bubble_radius_own: parseInt(document.getElementById('bubbleRadiusOwn').value),
-                    bubble_radius_other: parseInt(document.getElementById('bubbleRadiusOther').value),
-                    nav_opacity: parseInt(document.getElementById('navOpacity').value),
-                    nav_blur: parseInt(document.getElementById('navBlur').value),
-                    nav_corner_radius: parseInt(document.getElementById('navCornerRadius').value),
-                    nav_height: parseInt(document.getElementById('navHeight').value),
-                    font_size: 14
-                }
-            };
             
             try {
-                const res = await fetch('/api/themes/custom', {
+                const btn = document.querySelector('#loginForm .auth-btn');
+                btn.textContent = 'Вход...';
+                btn.disabled = true;
+                
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(customTheme)
-                });
-                
-                if (res.ok) {
-                    alert('Тема сохранена!');
-                    await loadThemes();
-                }
-            } catch (e) {
-                console.error('Failed to save theme:', e);
-                alert('Ошибка при сохранении темы');
-            }
-        }
-        
-        async function loadThemes() {
-            try {
-                const res = await fetch('/api/themes');
-                const data = await res.json();
-                availableThemes = data.available;
-                currentTheme = data.current;
-                renderThemesGrid();
-                if (availableThemes[currentTheme]) {
-                    applyThemeFromObject(availableThemes[currentTheme]);
-                }
-            } catch (e) {
-                console.error('Failed to load themes:', e);
-            }
-        }
-        
-        function applyThemeFromObject(theme) {
-            if (!theme) return;
-            const colors = theme.colors;
-            document.documentElement.style.setProperty('--main-bg', colors.main_bg);
-            document.documentElement.style.setProperty('--surface', colors.surface || colors.bubble_other);
-            document.documentElement.style.setProperty('--accent', colors.accent);
-            document.documentElement.style.setProperty('--text', colors.text);
-            document.documentElement.style.setProperty('--text-secondary', colors.text_secondary);
-            document.documentElement.style.setProperty('--bubble-own', colors.bubble_own);
-            document.documentElement.style.setProperty('--bubble-other', colors.bubble_other);
-            document.documentElement.style.setProperty('--border', colors.border);
-            document.documentElement.style.setProperty('--bubble-radius-own', (theme.bubble_radius_own || theme.bubble_radius || 20) + 'px');
-            document.documentElement.style.setProperty('--bubble-radius-other', (theme.bubble_radius_other || theme.bubble_radius || 20) + 'px');
-            
-            if (theme.nav_opacity !== undefined) {
-                const mainBg = colors.main_bg;
-                const r = parseInt(mainBg.slice(1,3), 16);
-                const g = parseInt(mainBg.slice(3,5), 16);
-                const b = parseInt(mainBg.slice(5,7), 16);
-                document.documentElement.style.setProperty('--nav-bg', `rgba(${r}, ${g}, ${b}, ${theme.nav_opacity / 100})`);
-                document.documentElement.style.setProperty('--nav-blur', (theme.nav_blur || 25) + 'px');
-                document.documentElement.style.setProperty('--nav-corner-radius', (theme.nav_corner_radius || 0) + 'px');
-                document.documentElement.style.setProperty('--nav-height', (theme.nav_height || 64) + 'px');
-            }
-        }
-        
-        async function applyThemeFromServer(themeId) {
-            try {
-                const res = await fetch(`/api/themes/${themeId}`, { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    currentTheme = themeId;
-                    applyThemeFromObject(availableThemes[themeId]);
-                    renderThemesGrid();
-                }
-            } catch (e) {
-                console.error('Failed to apply theme:', e);
-            }
-        }
-        
-        function renderThemesGrid() {
-            const grid = document.getElementById('themesGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            
-            for (const [id, theme] of Object.entries(availableThemes)) {
-                const card = document.createElement('div');
-                card.className = 'theme-card';
-                if (currentTheme === id) card.classList.add('active');
-                
-                const preview = document.createElement('div');
-                preview.className = 'theme-preview';
-                preview.style.background = `linear-gradient(135deg, ${theme.colors.accent}, ${theme.colors.main_bg})`;
-                
-                const name = document.createElement('div');
-                name.className = 'theme-name';
-                name.textContent = theme.name;
-                
-                card.appendChild(preview);
-                card.appendChild(name);
-                card.onclick = () => applyThemeFromServer(id);
-                grid.appendChild(card);
-            }
-        }
-        
-        // ========== БОТЫ ==========
-        async function loadBots() {
-            try {
-                const res = await fetch('/api/bots');
-                const botsList = await res.json();
-                renderBots(botsList);
-            } catch (e) {
-                console.error('Failed to load bots:', e);
-            }
-        }
-        
-        function renderBots(botsList) {
-            const container = document.getElementById('botsList');
-            if (!container) return;
-            container.innerHTML = '';
-            
-            if (botsList.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div>🤖</div><div>Нет ботов</div><div style="font-size:13px; margin-top:8px">Нажмите ⚙️ чтобы добавить</div></div>';
-                return;
-            }
-            
-            const grid = document.createElement('div');
-            grid.className = 'bots-grid';
-            
-            botsList.forEach(bot => {
-                const card = document.createElement('div');
-                card.className = 'bot-card';
-                card.innerHTML = `
-                    <div class="bot-avatar">${bot.username.charAt(0).toUpperCase()}</div>
-                    <div class="bot-info">
-                        <div class="bot-name">@${bot.username}</div>
-                        <div class="bot-status">${bot.chats_count} чатов</div>
-                    </div>
-                    ${bot.unread_total > 0 ? `<div class="bot-unread">${bot.unread_total}</div>` : ''}
-                `;
-                card.onclick = () => selectBot(bot.token, bot.username);
-                grid.appendChild(card);
-            });
-            
-            container.appendChild(grid);
-        }
-        
-        async function selectBot(token, username) {
-            activeBotToken = token;
-            currentBotName = '@' + username;
-            await fetch('/api/bots/' + token + '/activate', { method: 'POST' });
-            navigateTo('chats', currentBotName, true);
-            await loadChats(token);
-        }
-        
-        async function loadChats(token) {
-            try {
-                const res = await fetch(`/api/chats/${token}`);
-                const chats = await res.json();
-                renderChats(chats);
-            } catch (e) {
-                console.error('Failed to load chats:', e);
-            }
-        }
-        
-        function renderChats(chats) {
-            const container = document.getElementById('chatsList');
-            if (!container) return;
-            container.innerHTML = '';
-            
-            if (chats.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div>💬</div><div>Нет чатов</div><div style="font-size:13px; margin-top:8px">Напишите боту первым</div></div>';
-                return;
-            }
-            
-            chats.forEach(chat => {
-                const chatDiv = document.createElement('div');
-                chatDiv.className = 'chat-item';
-                chatDiv.innerHTML = `
-                    <div class="chat-avatar">${(chat.name.charAt(0) || '?').toUpperCase()}</div>
-                    <div class="chat-info">
-                        <div class="chat-name">${escapeHtml(chat.name)}</div>
-                        <div class="chat-preview">${chat.last_message || 'Нет сообщений'}</div>
-                    </div>
-                    <div class="chat-meta">
-                        ${chat.time ? `<div class="chat-time">${chat.time}</div>` : ''}
-                        ${chat.unread > 0 ? `<div class="chat-unread-badge">${chat.unread}</div>` : ''}
-                    </div>
-                `;
-                chatDiv.onclick = () => selectChat(chat.id, chat.name);
-                container.appendChild(chatDiv);
-            });
-        }
-        
-        async function selectChat(chatId, chatName) {
-            currentChatId = chatId;
-            navigateTo('chat', chatName, true);
-            await fetch(`/api/chats/${activeBotToken}/${chatId}/mark_read`, { method: 'POST' });
-            await loadMessages(chatId);
-        }
-        
-        async function loadMessages(chatId) {
-            try {
-                const res = await fetch(`/api/messages/${activeBotToken}/${chatId}`);
-                const messages = await res.json();
-                renderMessages(messages);
-            } catch (e) {
-                console.error('Failed to load messages:', e);
-            }
-        }
-        
-        function renderMessages(messages) {
-            const container = document.getElementById('messagesContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            
-            if (messages.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div>💬</div><div>Нет сообщений</div></div>';
-                return;
-            }
-            
-            messages.forEach(msg => addMessageToChat(msg));
-            scrollToBottom();
-        }
-        
-        function addMessageToChat(msg) {
-            const container = document.getElementById('messagesContainer');
-            if (!container) return;
-            
-            if (container.querySelector('.empty-state')) container.innerHTML = '';
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msg.is_my ? 'message-own' : 'message-other'}`;
-            
-            const senderSpan = document.createElement('div');
-            senderSpan.className = 'message-sender';
-            senderSpan.textContent = msg.is_my ? 'Вы' : (msg.sender || 'Пользователь');
-            messageDiv.appendChild(senderSpan);
-            
-            const bubble = document.createElement('div');
-            bubble.className = `bubble ${msg.is_my ? 'bubble-own' : 'bubble-other'}`;
-            bubble.textContent = msg.text;
-            messageDiv.appendChild(bubble);
-            
-            const timeSpan = document.createElement('div');
-            timeSpan.className = 'message-time';
-            const date = new Date(msg.time);
-            timeSpan.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            messageDiv.appendChild(timeSpan);
-            
-            container.appendChild(messageDiv);
-            scrollToBottom();
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-            
-            if (!text || !activeBotToken || !currentChatId) return;
-            
-            try {
-                const res = await fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: activeBotToken, chat_id: currentChatId, text: text })
+                    body: JSON.stringify({ username, password })
                 });
                 
                 const data = await res.json();
+                
                 if (data.success) {
-                    addMessageToChat(data.message);
-                    input.value = '';
-                    scrollToBottom();
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    showApp();
+                    initSocket();
+                    navigateTo('bots');
+                } else {
+                    errorEl.textContent = data.error || 'Неверные данные';
+                    errorEl.classList.add('show');
                 }
             } catch (e) {
-                console.error('Failed to send message:', e);
+                errorEl.textContent = 'Ошибка соединения';
+                errorEl.classList.add('show');
+            } finally {
+                const btn = document.querySelector('#loginForm .auth-btn');
+                btn.textContent = 'Войти';
+                btn.disabled = false;
             }
         }
-        
-        async function sendFile(file) {
-            if (!file || !activeBotToken || !currentChatId) return;
+
+        // Регистрация
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const errorEl = document.getElementById('registerError');
             
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1];
+            if (!username || !password) {
+                errorEl.textContent = 'Заполните все поля';
+                errorEl.classList.add('show');
+                return;
+            }
+            
+            if (username.length < 3) {
+                errorEl.textContent = 'Имя должно быть не менее 3 символов';
+                errorEl.classList.add('show');
+                return;
+            }
+            
+            if (password.length < 4) {
+                errorEl.textContent = 'Пароль должен быть не менее 4 символов';
+                errorEl.classList.add('show');
+                return;
+            }
+            
+            if (password !== confirm) {
+                errorEl.textContent = 'Пароли не совпадают';
+                errorEl.classList.add('show');
+                return;
+            }
+            
+            try {
+                const btn = document.querySelector('#registerForm .auth-btn');
+                btn.textContent = 'Регистрация...';
+                btn.disabled = true;
                 
-                try {
-                    const res = await fetch('/api/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            token: activeBotToken,
-                            chat_id: currentChatId,
-                            file: { name: file.name, data: base64 }
-                        })
-                    });
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    showApp();
+                    initSocket();
+                    navigateTo('bots');
+                } else {
+                    errorEl.textContent = data.error || 'Ошибка регистрации';
+                    errorEl.classList.add('show');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Ошибка соединения';
+                errorEl.classList.add('show');
+            } finally {
+                const btn = document.querySelector('#registerForm .auth-btn');
+                btn.textContent = 'Зарегистрироваться';
+                btn.disabled = false;
+            }
+        }
+
+        // Инициализация WebSocket
+        function initSocket() {
+            if (socket) return;
+            
+            socket = io();
+            
+            socket.on('connect', () => {
+                console.log('Socket connected');
+            });
+            
+            socket.on('new_message', (data) => {
+                // Если мы сейчас в этом чате - добавляем сообщение
+                if (activeBot?.token === data.token && activeChat?.id === data.chat_id && currentView === 'messages') {
+                    addMessageBubble(data.message);
+                }
+                
+                // Обновляем списки при необходимости
+                if (currentView === 'chats' && activeBot?.token === data.token) {
+                    loadChats();
+                }
+                if (currentView === 'bots') {
+                    loadBots();
+                }
+            });
+        }
+
+        // Навигация
+        function navigateTo(view) {
+            currentView = view;
+            
+            // Скрываем все view
+            document.getElementById('botsView').classList.add('hidden');
+            document.getElementById('chatsView').classList.add('hidden');
+            document.getElementById('messagesView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
+            
+            const navBack = document.getElementById('navBack');
+            const navTitle = document.getElementById('navTitle');
+            const navAction = document.getElementById('navAction');
+            
+            switch(view) {
+                case 'bots':
+                    document.getElementById('botsView').classList.remove('hidden');
+                    navBack.classList.add('hidden');
+                    navTitle.textContent = 'Мои боты';
+                    navAction.classList.remove('hidden');
+                    navAction.textContent = '⚙️';
+                    loadBots();
+                    break;
                     
-                    const data = await res.json();
-                    if (data.success) {
-                        addMessageToChat(data.message);
-                        scrollToBottom();
-                    }
-                } catch (e) {
-                    console.error('Failed to send file:', e);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendMessage();
+                case 'chats':
+                    document.getElementById('chatsView').classList.remove('hidden');
+                    navBack.classList.remove('hidden');
+                    navTitle.textContent = `@${activeBot?.username || 'Чаты'}`;
+                    navAction.classList.add('hidden');
+                    loadChats();
+                    break;
+                    
+                case 'messages':
+                    document.getElementById('messagesView').classList.remove('hidden');
+                    navBack.classList.remove('hidden');
+                    navTitle.textContent = activeChat?.name || 'Чат';
+                    navAction.classList.add('hidden');
+                    loadMessages();
+                    break;
+                    
+                case 'settings':
+                    document.getElementById('settingsView').classList.remove('hidden');
+                    navBack.classList.remove('hidden');
+                    navTitle.textContent = 'Настройки';
+                    navAction.classList.add('hidden');
+                    loadSettings();
+                    break;
             }
         }
-        
-        function scrollToBottom() {
-            setTimeout(() => {
-                const container = document.getElementById('messagesContainer');
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            }, 100);
+
+        function goBack() {
+            switch(currentView) {
+                case 'chats':
+                    navigateTo('bots');
+                    break;
+                case 'messages':
+                    navigateTo('chats');
+                    break;
+                case 'settings':
+                    navigateTo('bots');
+                    break;
+            }
         }
-        
-        function showAddBotDialog() {
-            document.getElementById('addBotDialog').classList.add('active');
+
+        function handleNavAction() {
+            if (currentView === 'bots') {
+                navigateTo('settings');
+            }
         }
-        
-        function closeAddBotDialog() {
-            document.getElementById('addBotDialog').classList.remove('active');
-            document.getElementById('newBotToken').value = '';
-        }
-        
-        async function addBot() {
-            const token = document.getElementById('newBotToken').value.trim();
-            if (!token) return;
+
+        // Загрузка ботов
+        async function loadBots() {
+            const container = document.getElementById('botsView');
+            
+            if (!authToken) return;
             
             try {
                 const res = await fetch('/api/bots', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: token })
+                    body: JSON.stringify({ token: authToken })
+                });
+                
+                const bots = await res.json();
+                
+                let html = '';
+                
+                if (bots.length === 0) {
+                    html = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🤖</div>
+                            <div class="empty-state-title">Нет ботов</div>
+                            <div class="empty-state-text">Добавьте вашего первого Telegram бота</div>
+                            <button class="add-btn" onclick="showAddBotModal()">Добавить бота</button>
+                        </div>
+                    `;
+                } else {
+                    html = '<div style="padding-top: 8px;">';
+                    bots.forEach(bot => {
+                        html += `
+                            <div class="list-item" onclick="selectBot('${escapeAttr(bot.token)}', '${escapeAttr(bot.username)}')">
+                                <div class="list-item-avatar">🤖</div>
+                                <div class="list-item-content">
+                                    <div class="list-item-title">@${escapeHtml(bot.username)}</div>
+                                    <div class="list-item-subtitle">${bot.chats_count} чатов</div>
+                                </div>
+                                ${bot.unread_total > 0 ? `<div class="badge">${bot.unread_total}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    html += `
+                        <div style="padding: 0 16px; margin-top: 12px;">
+                            <button class="add-btn" onclick="showAddBotModal()" style="width: 100%;">+ Добавить бота</button>
+                        </div>
+                    `;
+                    html += '</div>';
+                }
+                
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('Failed to load bots:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-title">Ошибка загрузки</div></div>';
+            }
+        }
+
+        function selectBot(token, username) {
+            activeBot = { token, username };
+            navigateTo('chats');
+        }
+
+        // Загрузка чатов
+        async function loadChats() {
+            const container = document.getElementById('chatsView');
+            
+            if (!authToken || !activeBot) return;
+            
+            try {
+                const res = await fetch('/api/chats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken, bot_token: activeBot.token })
+                });
+                
+                const chats = await res.json();
+                
+                let html = '';
+                
+                if (chats.length === 0) {
+                    html = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">💬</div>
+                            <div class="empty-state-title">Нет чатов</div>
+                            <div class="empty-state-text">У этого бота пока нет активных чатов. Напишите боту в Telegram.</div>
+                        </div>
+                    `;
+                } else {
+                    html = '<div style="padding-top: 8px;">';
+                    chats.forEach(chat => {
+                        html += `
+                            <div class="list-item" onclick="selectChat('${escapeAttr(chat.id)}', '${escapeAttr(chat.name)}')">
+                                <div class="list-item-avatar">${chat.name.charAt(0).toUpperCase()}</div>
+                                <div class="list-item-content">
+                                    <div class="list-item-title">${escapeHtml(chat.name)}</div>
+                                </div>
+                                ${chat.unread > 0 ? `<div class="badge">${chat.unread}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('Failed to load chats:', e);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-title">Ошибка загрузки</div></div>';
+            }
+        }
+
+        function selectChat(chatId, chatName) {
+            activeChat = { id: chatId, name: chatName };
+            navigateTo('messages');
+        }
+
+        // Загрузка сообщений
+        async function loadMessages() {
+            const container = document.getElementById('messagesArea');
+            
+            if (!authToken || !activeBot || !activeChat) return;
+            
+            try {
+                const res = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        token: authToken, 
+                        bot_token: activeBot.token,
+                        chat_id: activeChat.id 
+                    })
+                });
+                
+                const messages = await res.json();
+                container.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #8e8e93; padding: 40px;">Нет сообщений</div>';
+                } else {
+                    messages.forEach(msg => addMessageBubble(msg));
+                }
+                
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                console.error('Failed to load messages:', e);
+                container.innerHTML = '<div style="text-align: center; color: #8e8e93; padding: 40px;">Ошибка загрузки</div>';
+            }
+        }
+
+        function addMessageBubble(msg) {
+            const container = document.getElementById('messagesArea');
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper ${msg.is_my ? 'sent' : 'received'}`;
+            
+            const time = new Date(msg.time).toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            wrapper.innerHTML = `
+                <div class="message-bubble">${escapeHtml(msg.text)}</div>
+                <div class="message-meta">
+                    ${!msg.is_my ? `<span>${escapeHtml(msg.sender || '')}</span>` : ''}
+                    <span>${time}</span>
+                </div>
+            `;
+            
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Отправка сообщения
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text || !authToken || !activeBot || !activeChat) return;
+            
+            input.disabled = true;
+            
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: authToken,
+                        bot_token: activeBot.token,
+                        chat_id: activeChat.id,
+                        text: text
+                    })
                 });
                 
                 const data = await res.json();
+                
                 if (data.success) {
-                    closeAddBotDialog();
-                    await loadBots();
+                    input.value = '';
+                    addMessageBubble(data.message);
+                } else {
+                    alert(data.error || 'Ошибка отправки');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Настройки
+        function loadSettings() {
+            const container = document.getElementById('settingsView');
+            
+            container.innerHTML = `
+                <div class="settings-section">
+                    <div class="settings-section-title">Уведомления</div>
+                    <div class="settings-item" onclick="toggleSound()">
+                        <span>🔊 Звук уведомлений</span>
+                        <div class="toggle-switch ${settings.sound ? 'on' : ''}" id="soundToggle"></div>
+                    </div>
+                    <div class="settings-item" onclick="toggleNotifications()">
+                        <span>📱 Push-уведомления</span>
+                        <div class="toggle-switch ${settings.notifications ? 'on' : ''}" id="notifToggle"></div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <div class="settings-section-title">Управление ботами</div>
+                    <div id="botsManageList"></div>
+                </div>
+                
+                <button class="logout-btn" onclick="handleLogout()">Выйти</button>
+            `;
+            
+            loadBotsForManage();
+        }
+
+        async function loadBotsForManage() {
+            const container = document.getElementById('botsManageList');
+            
+            if (!authToken) return;
+            
+            try {
+                const res = await fetch('/api/bots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken })
+                });
+                
+                const bots = await res.json();
+                
+                if (bots.length === 0) {
+                    container.innerHTML = '<div style="color: #8e8e93; padding: 12px;">Нет добавленных ботов</div>';
+                    return;
+                }
+                
+                container.innerHTML = bots.map(bot => `
+                    <div class="settings-item">
+                        <span>@${escapeHtml(bot.username)}</span>
+                        <button onclick="removeBot('${escapeAttr(bot.token)}')" style="background: #ff3b30; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;">Удалить</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Failed to load bots for manage:', e);
+            }
+        }
+
+        function toggleSound() {
+            settings.sound = !settings.sound;
+            saveSettings();
+            loadSettings();
+        }
+
+        function toggleNotifications() {
+            settings.notifications = !settings.notifications;
+            if (settings.notifications && 'Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            saveSettings();
+            loadSettings();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+            
+            if (authToken) {
+                fetch('/api/settings/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken, settings })
+                }).catch(console.error);
+            }
+        }
+
+        async function removeBot(token) {
+            if (!confirm('Удалить этого бота?')) return;
+            
+            try {
+                const res = await fetch('/api/bots/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken, bot_token: token })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    loadSettings();
+                    if (activeBot?.token === token) {
+                        activeBot = null;
+                        activeChat = null;
+                    }
+                } else {
+                    alert(data.error || 'Ошибка удаления');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        // Модальное окно для добавления бота
+        function showAddBotModal() {
+            document.getElementById('modalTitle').textContent = 'Добавить бота';
+            document.getElementById('modalContent').innerHTML = `
+                <input type="text" class="modal-input" id="botTokenInput" placeholder="Токен бота от @BotFather">
+            `;
+            document.getElementById('modalOverlay').classList.remove('hidden');
+            modalCallback = addBot;
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.add('hidden');
+            modalCallback = null;
+        }
+
+        function confirmModal() {
+            if (modalCallback) {
+                modalCallback();
+            }
+        }
+
+        async function addBot() {
+            const tokenInput = document.getElementById('botTokenInput');
+            const botToken = tokenInput.value.trim();
+            
+            if (!botToken) {
+                alert('Введите токен бота');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/bots/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: authToken, bot_token: botToken })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    closeModal();
+                    if (currentView === 'bots') {
+                        loadBots();
+                    } else if (currentView === 'settings') {
+                        loadSettings();
+                    }
                     alert(`Бот @${data.username} добавлен!`);
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    alert(data.error || 'Неверный токен');
                 }
             } catch (e) {
-                console.error('Failed to add bot:', e);
-                alert('Ошибка при добавлении бота');
+                alert('Ошибка соединения');
             }
         }
-        
-        async function loadBotsManageList() {
-            try {
-                const res = await fetch('/api/bots');
-                const botsList = await res.json();
-                const container = document.getElementById('botsManageList');
-                if (!container) return;
-                
-                if (botsList.length === 0) {
-                    container.innerHTML = '<div class="empty-state">Нет ботов</div>';
-                } else {
-                    container.innerHTML = botsList.map(bot => `
-                        <div class="bot-manage-item">
-                            <div>🤖 @${bot.username}</div>
-                            <button class="remove-bot-btn" onclick="removeBot('${bot.token}')">Удалить</button>
-                        </div>
-                    `).join('');
-                }
-            } catch (e) {
-                console.error('Failed to load bots list:', e);
-            }
+
+        // Выход
+        function handleLogout() {
+            localStorage.removeItem('authToken');
+            authToken = null;
+            activeBot = null;
+            activeChat = null;
+            currentView = 'bots';
+            location.reload();
         }
-        
-        async function removeBot(token) {
-            if (confirm('Удалить этого бота?')) {
-                await fetch(`/api/bots/${token}`, { method: 'DELETE' });
-                if (activeBotToken === token) {
-                    activeBotToken = null;
-                    navigateTo('bots', 'Telegram Bot', false);
-                }
-                await loadBots();
-                await loadBotsManageList();
-            }
-        }
-        
+
+        // Вспомогательные функции
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
-        function setupWebSocket() {
-            socket.on('connect', () => console.log('WebSocket connected'));
-            socket.on('new_message', (data) => {
-                if (activeBotToken === data.token && currentChatId === data.chat_id) {
-                    addMessageToChat(data.message);
-                } else if (activeBotToken === data.token) {
-                    loadChats(activeBotToken);
-                } else {
-                    loadBots();
-                }
-            });
+
+        function escapeAttr(text) {
+            if (!text) return '';
+            return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
-        
-        // Свайп для возврата
-        let touchStartX = 0;
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-        });
-        
-        document.addEventListener('touchend', (e) => {
-            const touchEndX = e.changedTouches[0].clientX;
-            if (touchEndX - touchStartX > 80 && currentScreen !== 'bots') {
-                handleBack();
+
+        // Обработка Enter на формах авторизации
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('authScreen').classList.contains('hidden')) {
+                    if (!document.getElementById('loginForm').classList.contains('hidden')) {
+                        handleLogin();
+                    } else if (!document.getElementById('registerForm').classList.contains('hidden')) {
+                        handleRegister();
+                    }
+                }
             }
         });
-        
-        async function init() {
-            await loadThemes();
-            await loadBots();
-            setupWebSocket();
-            navigateTo('bots', 'Telegram Bot', false);
-            
-            const setHeight = () => {
-                document.body.style.height = window.innerHeight + 'px';
-            };
-            setHeight();
-            window.addEventListener('resize', setHeight);
-        }
-        
-        init();
     </script>
 </body>
 </html>
