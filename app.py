@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, send_from_directory
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 import requests
 import json
 import threading
@@ -11,17 +12,12 @@ import hashlib
 import secrets
 from datetime import datetime
 from pathlib import Path
-from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Папка для данных пользователей
 USERS_DIR = os.path.join(os.getcwd(), "user_data")
 os.makedirs(USERS_DIR, exist_ok=True)
 
